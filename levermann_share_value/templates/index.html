@@ -1,21 +1,31 @@
 {% extends 'header.html' %}
 {% block content %}
     <div class="container">
-        <div class="row">
-            <div class="col">
-                <form method="post" action="">
-                    {{ form.csrf_token }}
-                    {{ form.isin.label }} {{ form.isin( size=12 ) }}
-                    {% if form.isin.errors %}
-                        <ul class="errors">
-                            {% for error in form.isin.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                    {{ form.submit() }}
+        <form class="row g-3 my-3" method="post" action="">
+            {{ form.csrf_token }}
+            <div class="col-auto">
+                {{ form.isin.label(class_='form-label') }}
+            </div>
+            <div class="col-auto">
+                {{ form.isin( size=12, class_='form-control' ) }}
+            </div>
+            <div class="col-auto">
+                {{ form.submit(class_='btn btn-primary mb-3') }}
+            </div>
+            <div class="col-auto">
+                {% if form.isin.errors %}
+                    <ul class="errors">
+                        {% for error in form.isin.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </form>
 
-                </form>
+        <div class="row my-3">
+            <div class="col-auto">
+                <a href="{{ url_for('routes.get_all_fingreen_share') }}" type="button" class="btn btn-danger">all fingreen shares</a>
             </div>
         </div>
         {% with messages = get_flashed_messages() %}
@@ -46,7 +56,7 @@
                                         </h4>
                                         <div id="collapseOne_{{ share.wkn }}" class="accordion-collapse collapse"
                                              data-bs-parent="#accordionExample" style="">
-                                            <div class="accordion-body">{{ share.long_description_fingreen }}</div>
+                                            <div class="accordion-body">{{ share.long_description_de }}</div>
                                         </div>
                                     </div>
                                 </div>

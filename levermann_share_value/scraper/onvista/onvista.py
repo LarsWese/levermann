@@ -1,6 +1,5 @@
 import json
 import logging
-from dataclasses import dataclass
 from datetime import date, datetime
 from json import JSONDecodeError
 
@@ -9,6 +8,7 @@ from bs4 import BeautifulSoup
 from dateutil import relativedelta
 
 from levermann_share_value.scraper import headers
+from levermann_share_value.scraper.raw_data import RawData
 
 BASE_URL = "https://onvista.de"
 
@@ -17,53 +17,42 @@ METRICS_URL = f"{BASE_URL}/aktien/kennzahlen/"
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class RawData:
-    name: str
-    value: str
-    fetch_date: date
-    related_date: date = None
-
-    def __repr__(self):
-        return f'{self.name} = {self.value} from:{self.related_date} fetched:{self.fetch_date}'
-
-
-def get_be_weekly_data(raw_data: list[RawData]) -> list[RawData]:
+def get_be_weekly_data(data: list[RawData]) -> list[RawData]:
     """
     Only returns the data that looked at be weekly. That is
     4, 5, 13 price_earnings_ratio (=KGV = EPS) last 3, now, next year
     9, 10, 11 course_y1_ago, course_6m_ago, course_today
-    :param raw_data:
+    :param data:
     :return:
     """
-    be_weekly_data: list[RawData] = []
-    for d in raw_data:
+    biweekly_data: list[RawData] = []
+    for d in data:
         if d.name == 'price_earnings_ratio' \
                 or d.name == 'course_y1_ago' \
                 or d.name == 'course_6m_ago' \
                 or d.name == 'course_today':
-            be_weekly_data.append(d)
-    return be_weekly_data
+            biweekly_data.append(d)
+    return biweekly_data
 
 
-def get_yearly_data(raw_data: list[RawData]) -> list[RawData]:
+def get_yearly_data(data: list[RawData]) -> list[RawData]:
     """
     Only return the data that is important after the fiscal year ends
     0 market_capitalization
     1 return_equity
     2 ebit_margin
     3 equity_ratio_in_percent 
-    :param raw_data: 
+    :param data: 
     :return: 
     """""
-    be_weekly_data: list[RawData] = []
-    for d in raw_data:
+    yearly_data: list[RawData] = []
+    for d in data:
         if d.name == 'equity_ratio_in_percent' \
                 or d.name == 'ebit_margin' \
                 or d.name == 'return_equity' \
                 or d.name == 'market_capitalization':
-            be_weekly_data.append(d)
-    return be_weekly_data
+            yearly_data.append(d)
+    return yearly_data
 
 
 def json_data(html_content):
@@ -72,7 +61,7 @@ def json_data(html_content):
     try:
         return json.loads(data_json)
     except JSONDecodeError as ex:
-        logger.error(f"could not load data origig {html_content}")
+        logger.error(f"could not load data origin: {html_content}")
         logger.error(f"error: {ex.msg}")
         raise ex
 
@@ -133,40 +122,46 @@ class OnVista:
         response = requests.get(url, headers=headers)
         response.encoding = 'utf-8'
         data = json_data(response.text)
-
         props_data_ = data['props']['pageProps']['data']
-        snapshot_ = props_data_['snapshot']
-        result.append(
-            RawData(name="market_capitalization", value=snapshot_['stocksFigure']['marketCapCompany'], fetch_date=now))
-        result.append(
-            RawData(name="fiscal_year_end", value=snapshot_['stocksBalanceSheetList']['list'][-1]['periodeEnd'],
-                    fetch_date=now))
+        try:
+            snapshot_ = props_data_['snapshot']
+            result.append(
+                RawData(name="market_capitalization", value=snapshot_['stocksFigure']['marketCapCompany'], fetch_date=now))
 
-        instrument_ = snapshot_['instrument']
-        result.append(RawData(name="isin", value=instrument_['isin'], fetch_date=now))
-        result.append(RawData(name="wkn", value=instrument_['wkn'], fetch_date=now))
-        result.append(RawData(name="symbol", value=instrument_['symbol'], fetch_date=now))
-        result.append(RawData(name="name", value=instrument_['name'], fetch_date=now))
-        result.append(RawData(name="detail_page", value=instrument_['urls']['WEBSITE'], fetch_date=now))
+            last_fiscal_year = snapshot_['stocksBalanceSheetList']['list'][-1]['periodeEnd']
+            result.append(
+                RawData(name="last_fiscal_year", value=last_fiscal_year,
+                        fetch_date=now))
+            instrument_ = snapshot_['instrument']
+            result.append(RawData(name="isin", value=instrument_['isin'], fetch_date=now))
+            result.append(RawData(name="wkn", value=instrument_['wkn'], fetch_date=now))
+            result.append(RawData(name="symbol", value=instrument_['symbol'], fetch_date=now))
+            result.append(RawData(name="name", value=instrument_['name'], fetch_date=now))
+            result.append(RawData(name="detail_page", value=instrument_['urls']['WEBSITE'], fetch_date=now))
 
-        company_ = props_data_['company']
-        result.append(RawData(name="logo", value=company_['companyLogo']['photoUrl'], fetch_date=now))
-        result.append(RawData(name="long_description_ov", value=company_['profile'][0]['value'], fetch_date=now))
+            company_ = props_data_['company']
+            if hasattr(company_, 'companyLogo'):
+                result.append(RawData(name="logo", value=company_['companyLogo']['photoUrl'], fetch_date=now))
 
-        result.append(RawData(name="country", value=snapshot_['keywords']['isoCountry'], fetch_date=now))
+            result.append(RawData(name="long_description_ov", value=company_['profile'][0]['value'], fetch_date=now))
 
-        descriptor_ = company_['companyDescriptor']
-        result.append(RawData(name="website", value=descriptor_['url'], fetch_date=now))
-        result.append(RawData(name="currency", value=descriptor_['isoCurrency'], fetch_date=now))
-        contact_ = descriptor_['contact']
-        result.append(RawData(name="street", value=f'{contact_["street"]} {contact_["streetnumber"]}', fetch_date=now))
-        result.append(RawData(name="city", value=f'{contact_["city"]}', fetch_date=now))
-        result.append(RawData(name="zip_code", value=f'{contact_["zipCode"]}', fetch_date=now))
+            result.append(RawData(name="country", value=snapshot_['keywords']['isoCountry'], fetch_date=now))
 
-        branch_ = snapshot_['company']['branch']
-        result.append(RawData(name="sector", value=branch_['sector']['name'], fetch_date=now))
-        result.append(RawData(name="branch", value=branch_['name'], fetch_date=now))
+            descriptor_ = company_['companyDescriptor']
+            result.append(RawData(name="website", value=descriptor_['url'], fetch_date=now))
 
+            contact_ = descriptor_['contact']
+            result.append(RawData(name="street", value=f'{contact_["street"]} {contact_["streetnumber"]}', fetch_date=now))
+            result.append(RawData(name="city", value=f'{contact_["city"]}', fetch_date=now))
+            result.append(RawData(name="zip_code", value=f'{contact_["zipCode"]}', fetch_date=now))
+
+            branch_ = snapshot_['company']['branch']
+            result.append(RawData(name="sector", value=branch_['sector']['name'], fetch_date=now))
+            result.append(RawData(name="branch", value=branch_['name'], fetch_date=now))
+        except AttributeError as ae:
+            logger.warning(f'{isin_} has not attribute', ae)
+        except KeyError as ke:
+            logger.warning(f'{isin_} has not key', ke)
         return result
 
     def __get_metrics(self) -> list[RawData]:
@@ -314,4 +309,10 @@ class OnVista:
 
 if __name__ == '__main__':
     ov: OnVista = OnVista()
-    ov.get_meta_data('DE000A11QW68', datetime.utcnow())
+
+    # raw_data = ov.get_meta_data('DE000A0WMPJ6', datetime.utcnow()) # aixtron
+    raw_data = ov.get_meta_data('DE000A3MQC70', datetime.utcnow())  # aixtron
+    # raw_data = ov.get_meta_data('US79466L3024', datetime.utcnow()) # Salesforce
+    # raw_data = ov.get_meta_data('US02079K3059', datetime.utcnow()) # alphabet
+    for r in raw_data:
+        print(r)

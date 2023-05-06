@@ -1,7 +1,7 @@
 from flask import render_template, request, Blueprint, flash, redirect, url_for
 
 from levermann_share_value.levermann.forms import SearchFrom
-from levermann_share_value.levermann.levermann_share_mgr import LevermannShareMgr
+from levermann_share_value.levermann.levermann_share_mgr import LevermannShareMgr, get_all_shares
 from levermann_share_value.database.models import Share
 from levermann_share_value import db
 import logging
@@ -26,6 +26,11 @@ def index():
         return redirect(url_for('routes.index'))
     elif isin is not None:
         scraper_mgr.scrape_share_by(isin=isin)
-    shares: list = scraper_mgr.get_all_shares()
+    shares: list = get_all_shares()
     return render_template('index.html', shares=shares, form=form)
 
+@routes.route('/all_fingreen')
+def get_all_fingreen_share():
+    # scraper_mgr.load_everything()
+    scraper_mgr.load_ov_data_for_all_shares()
+    return redirect(url_for('routes.index'))

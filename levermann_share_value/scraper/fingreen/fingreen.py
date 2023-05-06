@@ -3,17 +3,16 @@ import logging
 import requests
 from bs4 import BeautifulSoup, ResultSet
 
-from levermann_share_value import db
-from levermann_share_value.database.models import Share
 from levermann_share_value.scraper import headers
+from scraper.raw_data import BasicShare
 
 BASE_URL = "https://www.fingreen.de"
 URL = BASE_URL + "/gruene-Aktien"
 logger = logging.getLogger(__name__)
 
 
-def get_shares() -> list:
-    result: list = []
+def get_shares() -> list[BasicShare]:
+    result: list[BasicShare] = []
     page = requests.get(URL, headers=headers)
     soup = BeautifulSoup(page.content, "html.parser")
 
@@ -25,51 +24,28 @@ def get_shares() -> list:
         for row in rows:
             find_all: ResultSet = row.find_all("td")
             if len(find_all) > 0:
-                name = find_all[0]('a', href=True)[0].text
-                link = find_all[0]('a', href=True)[0]['href']
-                wkn = find_all[1].text
+                detail = find_all[0].find('a', href=True)
+                name = detail.text
+                isin = get_isin(detail['href'])
                 description = find_all[2].text
-                country: str = find_all[3].text
-                s: Share = Share(name=name,
-                                 description=description,
-                                 wkn=wkn,
-                                 detail_page=BASE_URL + link,
-                                 country=country)
-                what: Share = Share.query.filter_by(wkn=s.wkn).first()
-                logger.info(f'one Share for {s.wkn} {what} ')
-                if not what:
-                    logger.info('not yet in list.')
-                    add_details(s)
-                    result.append(s)
-                    db.session.add(s)
-        db.session.commit()
+                result.append(BasicShare(name=name, isin=isin, description=description))
 
     return result
 
 
-def add_details(share: Share):
-    logger.debug(f'details for {share.name}')
-    response = requests.get(share.fingreen_detail_page, headers=headers)
-    response.encoding = 'utf-8'
-    soup = BeautifulSoup(response.text, "html.parser")
-    add_first_information(share, soup)
-    # TODO - put infos from fingreen into section
-    # div class="according-description" are description and address
-    # share.long_description_fingreen = soup.find('p', attrs={'class': 'rteBlock'}).text.replace('\xa0', '')
-    # share.address = soup.find('strong', string='Adresse:').parent.text.replace('\xa0', '').replace('Adresse:', '')
-    logger.debug(f'details: {share}')
-
-
-def add_first_information(share, soup):
-    # get ISIN and Website
-    find = soup.find('span', string='ISIN:')
-    isin_number_tag = find.next_sibling
-    isin = isin_number_tag.text
-    if len(isin) < 13:  # 12 chars for isin and 3 for \xa0
-        sibling = isin_number_tag.next_sibling
+def get_isin(detail_page_link: str) -> str:
+    detail_page = BeautifulSoup(requests.get(BASE_URL + detail_page_link, headers=headers).content,
+                                "html.parser")
+    isin = detail_page.find_all('span', text='ISIN:')[0].next_sibling.text.strip()
+    if not isin:
+        sibling = detail_page.find_all('span', text='ISIN:')[0].next_sibling.next_sibling
         if sibling:
-            isin = sibling.text
+            isin = sibling.text.strip()
         else:
-            isin = find.parent()[0].previous_element.next_sibling.text
-    share.isin = isin.replace('\xa0', '').replace('\n', '').strip()
-    share.website = soup.find('span', string='Website:').next_sibling.next_sibling.text
+            isin = detail_page.find_all('span', text='ISIN:')[0].parent.next_sibling.text.strip()
+    return isin
+
+
+if __name__ == '__main__':
+    # get_isin('/scatec-asa-aktie')
+    get_shares()
