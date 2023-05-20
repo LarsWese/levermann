@@ -9,6 +9,7 @@ from dateutil import relativedelta
 
 from levermann_share_value.scraper import headers
 from levermann_share_value.scraper.raw_data import RawData
+from levermann_share_value.scraper import get_weekdays_nearest_today_m6_y1_y5
 
 BASE_URL = "https://onvista.de"
 
@@ -64,26 +65,6 @@ def json_data(html_content):
         logger.error(f"could not load data origin: {html_content}")
         logger.error(f"error: {ex.msg}")
         raise ex
-
-
-def calc_correct_dates(today: date) -> [date, date, date]:
-    relative = relativedelta
-    m6: date = today + relative.relativedelta(months=-6)
-    y1: date = today + relative.relativedelta(years=-1)
-    nearest_weekday = today
-    if m6.weekday() == 5:
-        m6 = m6 + relative.relativedelta(days=-1)
-    if m6.weekday() == 6:
-        m6 = m6 + relative.relativedelta(days=-2)
-    if y1.weekday() == 5:
-        y1 = y1 + relative.relativedelta(days=-1)
-    if y1.weekday() == 6:
-        y1 = y1 + relative.relativedelta(days=-2)
-    if nearest_weekday.weekday() == 5:
-        nearest_weekday = today + relative.relativedelta(days=-1)
-    if today.weekday() == 6:
-        nearest_weekday = today + relative.relativedelta(days=-2)
-    return m6, nearest_weekday, y1
 
 
 class OnVista:
@@ -264,7 +245,7 @@ class OnVista:
 
     def __get_stock_price(self) -> list[RawData]:
         today: date = self.now.date()
-        m6, nearest_weekday, y1 = calc_correct_dates(today)
+        m6, nearest_weekday, y1, y5 = get_weekdays_nearest_today_m6_y1_y5(today)
         last_year = nearest_weekday.replace(year=today.year - 1)
         url = f'https://api.onvista.de/api/v1/instruments/STOCK/{self.entity_value}' \
               f'/eod_history?idNotation={self.id_notation}&range=Y1&startDate={last_year.strftime("%Y-%m-%d")}'
