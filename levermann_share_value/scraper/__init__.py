@@ -8,7 +8,7 @@ headers = {'User-Agent': USER_AGENT}
 relative = relativedelta
 
 
-def get_weekdays_nearest_today_m6_y1_y5(today: date = date.today()) -> [date, date, date, date]:
+def get_weekdays_m6_nearest_today_y1_y5(today: date = date.today()) -> [date, date, date, date]:
     y5 = nearest_previous_weekday_date(today + relative.relativedelta(years=-5))
     m6 = nearest_previous_weekday_date(today + relative.relativedelta(months=-6))
     y1 = nearest_previous_weekday_date(today + relative.relativedelta(years=-1))

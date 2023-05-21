@@ -4,7 +4,7 @@ from datetime import date
 import pandas as pd
 from yahooquery import Ticker
 
-from levermann_share_value.scraper import get_weekdays_nearest_today_m6_y1_y5, nearest_coming_weekday_date
+from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5, nearest_coming_weekday_date
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     # P/E Ratio = Stock Price / Earnings Per Share (EPS)
     print('\n\nKGV (PE-Ratio)')
-    m6, nearest_weekday, y1, y5 = get_weekdays_nearest_today_m6_y1_y5(date.today())
+    m6, nearest_weekday, y1, y5 = get_weekdays_m6_nearest_today_y1_y5(date.today())
     history_daily = crm.history(start=y5)
     print(history_daily.loc[symbol].loc[[m6]]['close'])
     print(history_daily.loc[symbol].loc[[y1]]['close'])
