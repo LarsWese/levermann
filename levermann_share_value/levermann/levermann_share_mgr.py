@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from levermann_share_value import db
 from levermann_share_value.database.models import Share, ShareValue
+from levermann_share_value.levermann import constans
+from levermann_share_value.levermann.exceptions import ShareNotExist
 from levermann_share_value.scraper.fingreen import fingreen
 from levermann_share_value.scraper.onvista import onvista
 from levermann_share_value.scraper.raw_data import RawData, BasicShare
@@ -48,9 +50,24 @@ def scrape_share_data(share: Share) -> Share:
     logger.info(f"Get metrics for {share.isin} shareId: {share.id}")
     if len(share.isin) > 0 and share is not None:
         share_values: [ShareValue] = []
+        stored_share_values: [ShareValue] = None
+        if len(share.share_values) > 0:
+            stored_share_values = share.share_values
+
         for ov_data in share_raw_data['metrics']:
-            share_value: ShareValue = __map_to_share_value(share.id, ov_data)
-            share_values.append(share_value)
+            if not stored_share_values:
+                share_value: ShareValue = __map_to_share_value(share.id, ov_data)
+                share_values.append(share_value)
+            else:
+                # check if data is already stored - need to check if it is the same
+                stored = False
+                for stored_share_value in stored_share_values:
+                    if stored_share_value.exists(ov_data.name, str(ov_data.value), ov_data.related_date):
+                        stored = True
+                        break
+                if not stored:
+                    share_value: ShareValue = __map_to_share_value(share.id, ov_data)
+                    share_values.append(share_value)
         session.add_all(share_values)
         session.commit()
     return share
@@ -73,8 +90,10 @@ def load_ov_data_for_all_shares():
     shares: [Share] = get_all_shares()
     for share in shares:
         if not share.wkn:
-            # everything else already scraped
-            scrape_share_data(share)
+            try:
+                scrape_share_data(share)
+            except ShareNotExist as sne:
+                logger.warning(f'could not find share with isin {share.isin} {sne}')
 
 
 def __get_next_quarter(fiscal_year_end: date, now: date) -> date:
@@ -101,38 +120,40 @@ def __map_share_data(share: Share, share_meta_datas: [RawData], today: date = da
     :return:
     """
     for smd in share_meta_datas:
-        if smd.name == 'isin':
+        if smd.name == constans.isin:
             share.isin = smd.value
-        elif smd.name == 'wkn':
+        elif smd.name == constans.wkn:
             share.wkn = smd.value
-        elif smd.name == 'symbol':
+        elif smd.name == constans.symbol:
             share.symbol = smd.value
-        elif smd.name == 'name':
+        elif smd.name == constans.name:
             share.name = smd.value
-        elif smd.name == 'detail_page':
+        elif smd.name == constans.detail_page:
             share.detail_page_ov = smd.value
-        elif smd.name == 'logo':
+        elif smd.name == constans.logo:
             share.logo_url = smd.value
-        elif smd.name == 'long_description_ov':
+        elif smd.name == constans.long_description_ov:
             share.long_description_de = smd.value
-        elif smd.name == 'country':
+        elif smd.name == constans.country:
             share.country = smd.value
-        elif smd.name == 'website':
+        elif smd.name == constans.website:
             share.website = smd.value
-        elif smd.name == 'street':
+        elif smd.name == constans.street:
             share.street = smd.value
-        elif smd.name == 'city':
+        elif smd.name == constans.city:
             share.city = smd.value
-        elif smd.name == 'zip_code':
+        elif smd.name == constans.zip_code:
             share.zip_code = smd.value
-        elif smd.name == 'sector':
+        elif smd.name == constans.sector:
             share.sector = smd.value
-        elif smd.name == 'branch':
+        elif smd.name == constans.branch:
             share.branch = smd.value
-        elif smd.name == 'last_fiscal_year':
-            share.last_fiscal_year = date.fromisoformat(smd.value)
+        elif smd.name == constans.last_fiscal_year:
+            if len(smd.value) > 0:
+                share.last_fiscal_year = date.fromisoformat(smd.value)
 
-    share.next_quarter = __get_next_quarter(share.last_fiscal_year, today)
+    if share.next_quarter:
+        share.next_quarter = __get_next_quarter(share.last_fiscal_year, today)
 
 
 def __map_to_share_value(share_id: int, raw_data: RawData) -> ShareValue:

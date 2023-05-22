@@ -6,6 +6,8 @@ from json import JSONDecodeError
 import requests
 from bs4 import BeautifulSoup
 
+from levermann_share_value.levermann import constans
+from levermann_share_value.levermann.exceptions import ShareNotExist
 from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5
 from levermann_share_value.scraper import headers
 from levermann_share_value.scraper.raw_data import RawData
@@ -55,67 +57,73 @@ def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
     data = __json_data(response.text)
-    props_data_ = data['props']['pageProps']['data']
     try:
+        props_data_ = data['props']['pageProps']['data']
         snapshot_ = props_data_['snapshot']
-        last_fiscal_year = snapshot_['stocksBalanceSheetList']['list'][-1]['periodeEnd']
-        result.append(
-            RawData(name="last_fiscal_year", value=last_fiscal_year,
-                    fetch_date=now))
+        if snapshot_['stocksBalanceSheetList']['list']:
+            last_fiscal_year = snapshot_['stocksBalanceSheetList']['list'][-1]['periodeEnd']
+            result.append(
+                RawData(name=constans.last_fiscal_year, value=last_fiscal_year,
+                        fetch_date=now))
         instrument_ = snapshot_['instrument']
-        result.append(RawData(name="isin", value=instrument_['isin'], fetch_date=now))
-        result.append(RawData(name="wkn", value=instrument_['wkn'], fetch_date=now))
-        result.append(RawData(name="symbol", value=instrument_['symbol'], fetch_date=now))
-        result.append(RawData(name="name", value=instrument_['name'], fetch_date=now))
-        result.append(RawData(name="detail_page", value=instrument_['urls']['WEBSITE'], fetch_date=now))
+        result.append(RawData(name=constans.isin, value=instrument_['isin'], fetch_date=now))
+        result.append(RawData(name=constans.wkn, value=instrument_['wkn'], fetch_date=now))
+        result.append(RawData(name=constans.symbol, value=instrument_['symbol'], fetch_date=now))
+        result.append(RawData(name=constans.name, value=instrument_['name'], fetch_date=now))
+        result.append(RawData(name=constans.detail_page, value=instrument_['urls']['WEBSITE'], fetch_date=now))
 
         company_ = props_data_['company']
         if hasattr(company_, 'companyLogo'):
-            result.append(RawData(name="logo", value=company_['companyLogo']['photoUrl'], fetch_date=now))
+            result.append(RawData(name=constans.logo, value=company_['companyLogo']['photoUrl'], fetch_date=now))
 
-        result.append(RawData(name="long_description_ov", value=company_['profile'][0]['value'], fetch_date=now))
+        result.append(RawData(name=constans.long_description_ov, value=company_['profile'][0]['value'], fetch_date=now))
 
-        result.append(RawData(name="country", value=snapshot_['keywords']['isoCountry'], fetch_date=now))
+        result.append(RawData(name=constans.country, value=snapshot_['keywords']['isoCountry'], fetch_date=now))
 
         descriptor_ = company_['companyDescriptor']
-        result.append(RawData(name="website", value=descriptor_['url'], fetch_date=now))
+        result.append(RawData(name=constans.website, value=descriptor_['url'], fetch_date=now))
 
         contact_ = descriptor_['contact']
         result.append(
-            RawData(name="street", value=f'{contact_["street"]} {contact_["streetnumber"]}', fetch_date=now))
-        result.append(RawData(name="city", value=f'{contact_["city"]}', fetch_date=now))
-        result.append(RawData(name="zip_code", value=f'{contact_["zipCode"]}', fetch_date=now))
+            RawData(name=constans.street, value=f'{contact_["street"]} {contact_["streetnumber"]}', fetch_date=now))
+        result.append(RawData(name=constans.city, value=f'{contact_["city"]}', fetch_date=now))
+        result.append(RawData(name=constans.zip_code, value=f'{contact_["zipCode"]}', fetch_date=now))
 
         branch_ = snapshot_['company']['branch']
-        result.append(RawData(name="sector", value=branch_['sector']['name'], fetch_date=now))
-        result.append(RawData(name="branch", value=branch_['name'], fetch_date=now))
+        result.append(RawData(name=constans.sector, value=branch_['sector']['name'], fetch_date=now))
+        result.append(RawData(name=constans.branch, value=branch_['name'], fetch_date=now))
     except AttributeError as ae:
         logger.warning(f'{isin_} has not attribute', ae)
     except KeyError as ke:
-        logger.warning(f'{isin_} has not key', ke)
+        logger.warning(f'{isin_} has not key {ke}')
     return result
 
 
-def __get_metrics(today: date, isin: str) -> [RawData]:
+def __get_metrics(today: datetime, isin: str) -> [RawData]:
     url = METRICS_URL + isin.strip()
     logger.info(f"url for metrics {url}")
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
     data = __json_data(response.text)
 
-    financial_list = data['props']['pageProps']['data']['figures']['stocksCnFinancialList']['list']
+    # when no financial Data the share does not exist in onvista
+    try:
+        financial_list = data['props']['pageProps']['data']['figures']['stocksCnFinancialList']['list']
+    except KeyError:
+        raise ShareNotExist(isin)
+
     fundamental_list = data['props']['pageProps']['data']['figures']['stocksCnFundamentalList']['list']
     snapshot = data['props']['pageProps']['data']['snapshot']
     onvista_datas: [RawData] = [
-        RawData(name="market_capitalization", value=snapshot['stocksFigure']['marketCapCompany'],
-                fetch_date=today)]
+        RawData(name=constans.market_capitalization, value=snapshot['stocksFigure']['marketCapCompany'],
+                fetch_date=today, related_date=today.date())]
 
     for fin in financial_list:
         item_date = date(year=fin['idYear'], month=1, day=1)
         # 3 Eigenkapitalquote in % yearly
         if 'cnEquityRatio' in fin:
             onvista_datas.append(RawData(
-                name='equity_ratio_in_percent',
+                name=constans.equity_ratio_in_percent,
                 value=fin['cnEquityRatio'],
                 related_date=item_date,
                 fetch_date=today
@@ -123,7 +131,7 @@ def __get_metrics(today: date, isin: str) -> [RawData]:
         # 2 Ebit Margin yearly
         if 'cnEbitMa' in fin:
             onvista_datas.append(RawData(
-                name='ebit_margin',
+                name=constans.ebit_margin,
                 value=fin['cnEbitMa'],
                 related_date=item_date,
                 fetch_date=today
@@ -131,7 +139,7 @@ def __get_metrics(today: date, isin: str) -> [RawData]:
         # 1 Eigenkapitalrendite (ROI) yearly
         if 'cnReturnEquity' in fin:
             onvista_datas.append(RawData(
-                name='return_equity',
+                name=constans.return_equity,
                 value=fin['cnReturnEquity'],
                 related_date=item_date,
                 fetch_date=today
@@ -142,7 +150,7 @@ def __get_metrics(today: date, isin: str) -> [RawData]:
         # 4, 5 KGV (price-earnings ratio)
         if 'cnPer' in fun:
             onvista_datas.append(RawData(
-                name='price_earnings_ratio',
+                name=constans.price_earnings_ratio,
                 value=fun['cnPer'],
                 related_date=item_date,
                 fetch_date=today
@@ -152,17 +160,19 @@ def __get_metrics(today: date, isin: str) -> [RawData]:
     quote = snapshot["quote"]
     entity_value = quote["entityValue"]
     onvista_datas.append(RawData(
-        name='entity_value',
+        name=constans.entity_value,
         value=entity_value,
-        related_date=today,
+        # to get sure this will be loaded only ones
+        related_date=date(1970, 1, 1),
         fetch_date=today
     ))
     # id_notation (some id)
     id_notation = quote["market"]["idNotation"]
     onvista_datas.append(RawData(
-        name='id_notation',
+        name=constans.id_notation,
         value=id_notation,
-        related_date=today,
+        # to get sure this will be loaded only ones
+        related_date=date(1970, 1, 1),
         fetch_date=today
     ))
 
@@ -187,11 +197,12 @@ def __get_stock_price(today: date, id_notation: str, entity_value: str, isin: st
         data['datetimeLast'][idx] = datetime.utcfromtimestamp(int(day_timestamp)).date()
 
     for idx, day_timestamp in enumerate(dates):
-        search_date = datetime.utcfromtimestamp(int(day_timestamp)).date()
+        # search_date = datetime.utcfromtimestamp(int(day_timestamp)).date()
+        search_date = day_timestamp
         # 9 course today vs 6m every two weeks
         if m6 == search_date:
             onvista_datas.append(RawData(
-                name='course_m6_ago',
+                name=constans.course_m6_ago,
                 value=data["last"][idx],
                 related_date=search_date,
                 fetch_date=today
@@ -199,7 +210,7 @@ def __get_stock_price(today: date, id_notation: str, entity_value: str, isin: st
         # 10 course today vs 1y every two weeks
         elif y1 == search_date:
             onvista_datas.append(RawData(
-                name='course_y1_ago',
+                name=constans.course_y1_ago,
                 value=data["last"][idx],
                 related_date=search_date,
                 fetch_date=today
@@ -207,7 +218,7 @@ def __get_stock_price(today: date, id_notation: str, entity_value: str, isin: st
         # 9, 10, 11 course today every two weeks
         elif nearest_weekday == search_date:
             onvista_datas.append(RawData(
-                name='course_today',
+                name=constans.course_today,
                 value=data["last"][idx],
                 related_date=search_date,
                 fetch_date=today

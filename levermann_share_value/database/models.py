@@ -1,6 +1,8 @@
 from datetime import datetime, date
 from enum import IntEnum
 
+from sqlalchemy.orm import Mapped
+
 from levermann_share_value import db
 
 
@@ -13,6 +15,22 @@ class ShareType(IntEnum):
     @classmethod
     def choices(cls):
         return [(key.value, key.name) for key in cls]
+
+
+class ShareValue(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name: str = db.Column(db.String, nullable=False, index=True)
+    related_date: date = db.Column(db.Date, index=True, nullable=False)
+    value: str = db.Column(db.String, nullable=False)
+    fetch_date: datetime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
+    db.UniqueConstraint(share_id, related_date, value)
+
+    def exists(self, name: str, value: str, related_date: date) -> bool:
+        return name == self.name and value == self.value and related_date == self.related_date
+
+    def __repr__(self):
+        return f'{self.name} {self.value} {self.related_date}'
 
 
 class Share(db.Model):
@@ -35,20 +53,7 @@ class Share(db.Model):
     long_description_en: str = db.Column(db.String)
     short_description_de: str = db.Column(db.String)
     green: bool = db.Column(db.Boolean)
-    share_values = db.relationship('ShareValue', backref='shareValues', lazy='dynamic')
+    share_values: Mapped[ShareValue] = db.relationship('ShareValue')
 
     def __repr__(self):
         return f'{self.name} {self.description} {self.isin}'
-
-
-class ShareValue(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name: str = db.Column(db.String, nullable=False, index=True)
-    related_date: date = db.Column(db.Date, index=True, nullable=False)
-    value: str = db.Column(db.String, nullable=False)
-    fetch_date: datetime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
-    db.UniqueConstraint(share_id, related_date, value)
-
-    def __repr__(self):
-        return f'{self.name} {self.value} {self.related_date}'

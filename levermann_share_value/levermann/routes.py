@@ -10,6 +10,7 @@ import logging
 routes = Blueprint('routes', __name__)
 logger = logging.getLogger(__name__)
 
+
 @routes.route('/', methods=['GET', 'POST'])
 def index():
     form = SearchFrom()
@@ -25,8 +26,10 @@ def index():
     shares: list = lsm.get_all_shares()
     return render_template('index.html', shares=shares, form=form)
 
+
 @routes.route('/all_fingreen')
 def get_all_fingreen_share():
     # scraper_mgr.load_everything()
+    # lsm.load_everything()
     lsm.load_ov_data_for_all_shares()
     return redirect(url_for('routes.index'))
