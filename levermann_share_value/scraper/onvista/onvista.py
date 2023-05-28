@@ -1,18 +1,15 @@
 import json
 import logging
 from datetime import date, datetime
-from json import JSONDecodeError
 
 import requests
-from bs4 import BeautifulSoup
 
-from levermann_share_value.levermann import constans
+from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.exceptions import ShareNotExist
 from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5
 from levermann_share_value.scraper import headers
+from levermann_share_value.scraper.onvista import BASE_URL, json_data
 from levermann_share_value.scraper.raw_data import RawData
-
-BASE_URL = "https://onvista.de"
 
 METRICS_URL = f"{BASE_URL}/aktien/kennzahlen/"
 
@@ -34,17 +31,6 @@ def scrape(isin: str, now: datetime) -> {str: [RawData]}:
     return {'metadata': metadata, 'metrics': metrics + stock_price}
 
 
-def __json_data(html_content):
-    soup: BeautifulSoup = BeautifulSoup(html_content, "html.parser")
-    data_json = soup.find('script', id='__NEXT_DATA__').text
-    try:
-        return json.loads(data_json)
-    except JSONDecodeError as ex:
-        logger.error(f"could not load data origin: {html_content}")
-        logger.error(f"error: {ex.msg}")
-        raise ex
-
-
 def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     """
     metadata for the share
@@ -56,7 +42,8 @@ def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     url = f'{BASE_URL}/aktien/unternehmensprofil/{isin_}'
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
-    data = __json_data(response.text)
+    data = convert_to_json(response.text, isin_)
+
     try:
         props_data_ = data['props']['pageProps']['data']
         snapshot_ = props_data_['snapshot']
@@ -99,24 +86,31 @@ def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     return result
 
 
+def convert_to_json(response, isin_):
+    try:
+        data = json_data(response, logger)
+    except AttributeError:
+        raise ShareNotExist(isin_)
+    return data
+
+
 def __get_metrics(today: datetime, isin: str) -> [RawData]:
     url = METRICS_URL + isin.strip()
     logger.info(f"url for metrics {url}")
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
-    data = __json_data(response.text)
+    data = convert_to_json(response.text, isin)
 
     # when no financial Data the share does not exist in onvista
     try:
         financial_list = data['props']['pageProps']['data']['figures']['stocksCnFinancialList']['list']
+        fundamental_list = data['props']['pageProps']['data']['figures']['stocksCnFundamentalList']['list']
+        snapshot = data['props']['pageProps']['data']['snapshot']
+        onvista_datas: [RawData] = [
+            RawData(name=constans.market_capitalization, value=snapshot['stocksFigure']['marketCapCompany'],
+                    fetch_date=today, related_date=today.date())]
     except KeyError:
         raise ShareNotExist(isin)
-
-    fundamental_list = data['props']['pageProps']['data']['figures']['stocksCnFundamentalList']['list']
-    snapshot = data['props']['pageProps']['data']['snapshot']
-    onvista_datas: [RawData] = [
-        RawData(name=constans.market_capitalization, value=snapshot['stocksFigure']['marketCapCompany'],
-                fetch_date=today, related_date=today.date())]
 
     for fin in financial_list:
         item_date = date(year=fin['idYear'], month=1, day=1)
@@ -190,7 +184,8 @@ def __get_stock_price(today: date, id_notation: str, entity_value: str, isin: st
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
     onvista_datas: [RawData] = []
-    data = json.loads(response.text)
+    data = convert_to_json(response.text, isin)
+
     dates = data["datetimeLast"]
 
     for idx, day_timestamp in enumerate(dates):
@@ -234,4 +229,5 @@ if __name__ == '__main__':
     # raw_data = ov.get_meta_data('DE000A3MQC70', datetime.utcnow())  # aixtron
     # raw_data = ov.get_meta_data('US79466L3024', datetime.utcnow()) # Salesforce
     # raw_data = ov.get_meta_data('US02079K3059', datetime.utcnow()) # alphabet
-    __get_stock_price(date.today(), id_notation='19840731', entity_value='15215756', isin='AIXA')
+    # __get_meta_data('DE000A0WMPJ6', datetime.utcnow())
+    __get_metrics(datetime.utcnow(), 'DE000A0WMPJ6')

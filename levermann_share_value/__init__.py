@@ -1,10 +1,10 @@
-from flask import Flask
-from logging.config import dictConfig
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 import logging
+from logging.config import dictConfig
 
-db: SQLAlchemy = SQLAlchemy()
+from flask import Flask
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import MetaData
 
 DB_NAME = "../instance/levermann.db"
 
@@ -33,6 +33,18 @@ dictConfig({
     }
 })
 
+metadata = MetaData(
+    naming_convention={
+        "ix": 'ix_%(column_0_label)s',
+        "uq": "uq_%(table_name)s_%(column_0_name)s",
+        "ck": "ck_%(table_name)s_%(constraint_name)s",
+        "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+        "pk": "pk_%(table_name)s"
+    }
+)
+
+db: SQLAlchemy = SQLAlchemy(metadata=metadata)
+
 
 def create_app() -> Flask:
     app = Flask(__name__, template_folder='templates')
@@ -40,7 +52,6 @@ def create_app() -> Flask:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
     db.init_app(app)
 
-    from levermann_share_value.database.models import Share
     with app.app_context():
         db.create_all()
         logging.getLogger(__name__).info("Tables created")

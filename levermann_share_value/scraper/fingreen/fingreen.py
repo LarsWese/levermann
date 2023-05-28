@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup, ResultSet
 
 from levermann_share_value.scraper import headers
-from scraper.raw_data import BasicShare
+from levermann_share_value.scraper.raw_data import BasicShare
 
 BASE_URL = "https://www.fingreen.de"
 URL = BASE_URL + "/gruene-Aktien"

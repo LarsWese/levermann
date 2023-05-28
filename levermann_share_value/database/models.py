@@ -52,8 +52,21 @@ class Share(db.Model):
     long_description_de: str = db.Column(db.String)
     long_description_en: str = db.Column(db.String)
     short_description_de: str = db.Column(db.String)
-    green: bool = db.Column(db.Boolean)
+    green: bool = db.Column(db.Boolean, default=False)
     share_values: Mapped[ShareValue] = db.relationship('ShareValue')
+    index_id = db.Column(db.Integer, db.ForeignKey('indices.id'))
 
     def __repr__(self):
         return f'{self.name} {self.description} {self.isin}'
+
+
+class Indices(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name: str = db.Column(db.String, nullable=False, index=True)
+    wkn: str = db.Column(db.String)
+    symbol: str = db.Column(db.String)
+    isin: str = db.Column(db.String)
+    ulr: str = db.Column(db.String, nullable=False)
+    country: str = db.Column(db.String)
+    shares: Mapped[Share] = db.relationship('Share')
+    db.UniqueConstraint(name)

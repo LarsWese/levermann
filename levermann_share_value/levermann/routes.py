@@ -16,7 +16,7 @@ def index():
     form = SearchFrom()
     isin: str = request.args.get('isin')
     if request.method == 'POST' and form.validate_on_submit():
-        isin = form.isin.data
+        isin = form.isin.__index_data
         flash(f'Search for {isin}')
         logger.info(f"form for {isin} submitted")
         share: Share = lsm.get_share_by_isin(isin)
@@ -31,5 +31,5 @@ def index():
 def get_all_fingreen_share():
     # scraper_mgr.load_everything()
     # lsm.load_everything()
-    lsm.load_ov_data_for_all_shares()
+    lsm.load_shares_from_fingreen()
     return redirect(url_for('routes.index'))
