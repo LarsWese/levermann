@@ -17,6 +17,13 @@ def get_weekdays_m6_nearest_today_y1_y5(today: date = date.today()) -> [date, da
     return m6, nearest_weekday, y1, y5
 
 
+def get_end_of_last_3_month(today: date = date.today()) -> [date, date, date]:
+    m1 = nearest_previous_weekday_date(today + relative.relativedelta(months=-1))
+    m2 = nearest_previous_weekday_date(today + relative.relativedelta(months=-2))
+    m3 = nearest_previous_weekday_date(today + relative.relativedelta(months=-3))
+    return m1, m2, m3
+
+
 def nearest_previous_weekday_date(d: date) -> date:
     new_date = d
     if new_date.weekday() == 5:

@@ -23,4 +23,8 @@ id_notation = 'id_notation'
 course_m6_ago = 'course_m6_ago'
 course_y1_ago = 'course_y1_ago'
 course_today = 'course_today'
+course_m1_ago = 'course_m1_ago'
+course_m2_ago = 'course_m2_ago'
+course_m3_ago = 'course_m3_ago'
 url = 'url'
+

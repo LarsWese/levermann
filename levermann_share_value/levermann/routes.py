@@ -16,7 +16,7 @@ def index():
     form = SearchFrom()
     isin: str = request.args.get('isin')
     if request.method == 'POST' and form.validate_on_submit():
-        isin = form.isin.__index_data
+        isin = form.isin.data
         flash(f'Search for {isin}')
         logger.info(f"form for {isin} submitted")
         share: Share = lsm.get_share_by_isin(isin)
