@@ -59,6 +59,28 @@ class Share(db.Model):
     def __repr__(self):
         return f'{self.name} {self.description} {self.isin}'
 
+    def as_dict(self):
+        share_data = {'id': self.id,
+                      'isin': self.isin,
+                      'wkn': self.wkn,
+                      'symbol': self.symbol,
+                      'name': self.name,
+                      'website': self.website,
+                      'sector': self.sector,
+                      'branch': self.branch,
+                      'country': self.country,
+                      'street': self.street,
+                      'zip_code': self.zip_code,
+                      'city': self.city,
+                      'last_fiscal_year': self.last_fiscal_year,
+                      'next_quarter': self.next_quarter,
+                      'logo_url': self.logo_url,
+                      'long_description_de': self.long_description_de,
+                      'long_description_en': self.long_description_en,
+                      'green': self.green,
+                      'short_description_de': self.short_description_de}
+        return share_data
+
 
 class Indices(db.Model):
     id = db.Column(db.Integer, primary_key=True)

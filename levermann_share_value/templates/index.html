@@ -25,7 +25,8 @@
 
         <div class="row my-3">
             <div class="col-auto">
-                <a href="{{ url_for('routes.get_all_fingreen_share') }}" type="button" class="btn btn-danger">all fingreen shares</a>
+                <a href="{{ url_for('routes.get_all_fingreen_share') }}" type="button" class="btn btn-danger">all
+                    fingreen shares</a>
             </div>
         </div>
         {% with messages = get_flashed_messages() %}
@@ -37,52 +38,61 @@
                 </ul>
             {% endif %}
         {% endwith %}
-        {% for share in shares %}
-            <div class="row my-3">
-                <div class=" col-md-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title"><a href="https://{{ share.website }}">{{ share.name }}</a></h5>
-                            <div class="card-text">
-                                <div class="accordion" id="accordionExample">
-                                    <div class="accordion-item">
-                                        <h4 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button"
-                                                    data-bs-toggle="collapse"
-                                                    data-bs-target="#collapseOne_{{ share.wkn }}" aria-expanded="false"
-                                                    aria-controls="collapseOne_{{ share.wkn }}">
-                                                {{ share.description }}
-                                            </button>
-                                        </h4>
-                                        <div id="collapseOne_{{ share.wkn }}" class="accordion-collapse collapse"
-                                             data-bs-parent="#accordionExample" style="">
-                                            <div class="accordion-body">{{ share.long_description_de }}</div>
-                                        </div>
-                                    </div>
+        <div class="container">
+            <h2>Share Listing</h2>
+            <div class="row">
+                {% for share in shares %}
+                    <div class="col-md-6">
+                        <div class="card text-bg-light mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href={{ share.website }}>{{ share.name }} {{ share.country }}</a>
+                                    {% if share.large_cap == true %}
+                                        Large Cap
+                                    {% else %}
+                                        Small Mid Cap
+                                    {% endif %}
+                                </h5>
+                                <p class="card-subtitle mb-2 text-body-secondary">
+                                    <a data-bs-toggle="collapse" href="#{{ share.id }}" role="button"
+                                       aria-expanded="false"
+                                       aria-controls="{{ share.id }}">{{ share.short_description_de }}</a>
+                                </p>
+                                <div class="card-text collapse" id="{{ share.id }}">
+                                    <p class="card-text">{{ share.long_description_de }}</p>
                                 </div>
-                            </div>
-                        </div>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">WKN: ({{ share.wkn }} {{ share.country }})</li>
-                            <li class="list-group-item">ISIN: {{ share.isin }}</li>
-                        </ul>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-2">
-                                    <a href="{{ share.fingreen_detail_page }}" class="card-link">Fingreen detail
-                                        page</a>
-                                </div>
-                                <div class="column-gap-3 col-1">
-                                    <a href="{{ url_for('routes.index') }}?isin={{ share.isin }}" type="button"
-                                       class="btn btn-danger">getOnvistaData</a>
-                                </div>
+                                <p class="card-text">{{ share.sector }} / {{ share.branch }}</p>
+                                {% if share.market_capitalization %}
+                                    <p class="card-text">
+                                        MarketCap: {{ share.market_capitalization|currencyformat('EUR') }}</p>
+                                {% endif %}
+                                {% if share.ebit_margin %}
+                                    <p class="card-text">ebit
+                                        margin: {{ share.ebit_margin['value'] }} {{ share.ebit_margin['point'] }}</p>
+                                {% endif %}
+                                {% if share.return_equity %}
+                                    <p class="card-text">return on
+                                        equity: {{ share.return_equity['value'] }} {{ share.return_equity['point'] }}</p>
+                                {% endif %}
+                                {% if share.equity_ratio_in_percent %}
+                                    <p class="card-text">equity
+                                        ratio: {{ share.equity_ratio_in_percent['value'] }} {{ share.equity_ratio_in_percent['point'] }}</p>
+                                {% endif %}
+                                {% if share.price_earnings_ratio %}
+                                    <p class="card-text">
+                                        price_earnings_ratio: {{ share.price_earnings_ratio['value'] }} {{ share.price_earnings_ratio['point'] }}</p>
+                                {% endif %}
 
+                            </div>
+                            <div class="card-footer">
+                                <p class="card-text">symbol: {{ share.symbol }}, wkn: {{ share.wkn }}</p>
+                                <p class="card-text"><a href="{{ share['onvista_url'] }}" target="_blank">onvista</a></p>
                             </div>
                         </div>
                     </div>
-                </div>
+                {% endfor %}
             </div>
-        {% endfor %}
+        </div>
     </div>
 
 

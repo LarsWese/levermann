@@ -105,35 +105,35 @@ def __map_share_data(share: Share, share_meta_datas: [RawData], today: date = da
     :return:
     """
     for smd in share_meta_datas:
-        if smd.name == constans.isin:
+        if smd.name == constants.isin:
             share.isin = smd.value
-        elif smd.name == constans.wkn:
+        elif smd.name == constants.wkn:
             share.wkn = smd.value
-        elif smd.name == constans.symbol:
+        elif smd.name == constants.symbol:
             share.symbol = smd.value
-        elif smd.name == constans.name:
+        elif smd.name == constants.name:
             share.name = smd.value
-        elif smd.name == constans.detail_page:
+        elif smd.name == constants.detail_page:
             share.detail_page_ov = smd.value
-        elif smd.name == constans.logo:
+        elif smd.name == constants.logo:
             share.logo_url = smd.value
-        elif smd.name == constans.long_description_ov:
+        elif smd.name == constants.long_description_ov:
             share.long_description_de = smd.value
-        elif smd.name == constans.country:
+        elif smd.name == constants.country:
             share.country = smd.value
-        elif smd.name == constans.website:
+        elif smd.name == constants.website:
             share.website = smd.value
-        elif smd.name == constans.street:
+        elif smd.name == constants.street:
             share.street = smd.value
-        elif smd.name == constans.city:
+        elif smd.name == constants.city:
             share.city = smd.value
-        elif smd.name == constans.zip_code:
+        elif smd.name == constants.zip_code:
             share.zip_code = smd.value
-        elif smd.name == constans.sector:
+        elif smd.name == constants.sector:
             share.sector = smd.value
-        elif smd.name == constans.branch:
+        elif smd.name == constants.branch:
             share.branch = smd.value
-        elif smd.name == constans.last_fiscal_year:
+        elif smd.name == constants.last_fiscal_year:
             if len(smd.value) > 0:
                 share.last_fiscal_year = date.fromisoformat(smd.value)
 

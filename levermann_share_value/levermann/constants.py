@@ -27,4 +27,6 @@ course_m1_ago = 'course_m1_ago'
 course_m2_ago = 'course_m2_ago'
 course_m3_ago = 'course_m3_ago'
 url = 'url'
+large_cap = 'large_cap'
+onvista_url = 'onvista_url'
 

@@ -1,7 +1,9 @@
 import logging
 from logging.config import dictConfig
 
-from flask import Flask
+import babel
+from flask import Flask, request, g
+from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
@@ -48,8 +50,11 @@ db: SQLAlchemy = SQLAlchemy(metadata=metadata)
 
 def create_app() -> Flask:
     app = Flask(__name__, template_folder='templates')
+    babel = Babel(app, locale_selector=get_locale)
     app.config['SECRET_KEY'] = 'dsfajifawo jflknvkdczxl'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
+    app.config['BABEL_LANGUAGES'] = ['en', 'de']  # Available languages
+    app.config['BABEL_DEFAULT_LOCALE'] = 'de'  # Default locale
     db.init_app(app)
 
     with app.app_context():
@@ -60,3 +65,13 @@ def create_app() -> Flask:
     from levermann_share_value.levermann.routes import routes
     app.register_blueprint(routes)
     return app
+
+def get_locale():
+    # if a user is logged in, use the locale from the user settings
+    user = getattr(g, 'user', None)
+    if user is not None:
+        return user.locale
+    # otherwise try to guess the language from the user accept
+    # header the browser transmits.  We support de/fr/en in this
+    # example.  The best match wins.
+    return request.accept_languages.best_match(['de', 'fr', 'en'])

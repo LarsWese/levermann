@@ -8,10 +8,8 @@ from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.exceptions import ShareNotExist
 from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5, get_end_of_last_3_month
 from levermann_share_value.scraper import headers
-from levermann_share_value.scraper.onvista import BASE_URL, json_data
+from levermann_share_value.scraper.onvista import json_data, METRICS_URL, COMPANY_PROFILE
 from levermann_share_value.scraper.raw_data import RawData
-
-METRICS_URL = f"{BASE_URL}/aktien/kennzahlen/"
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +37,7 @@ def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     :return: a list raw metadata to create the share from
     """
     result: [RawData] = []
-    url = f'{BASE_URL}/aktien/unternehmensprofil/{isin_}'
-    response = requests.get(url, headers=headers)
+    response = requests.get(f"{COMPANY_PROFILE}{isin_}", headers=headers)
     response.encoding = 'utf-8'
     data = convert_to_json(response.text, isin_)
 

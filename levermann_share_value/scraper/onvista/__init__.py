@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 
 BASE_URL = "https://onvista.de"
 
+METRICS_URL = f"{BASE_URL}/aktien/kennzahlen/"
+COMPANY_PROFILE = f'{BASE_URL}/aktien/unternehmensprofil/'
+
 
 def json_data(html_content, logger):
     soup: BeautifulSoup = BeautifulSoup(html_content, "html.parser")
