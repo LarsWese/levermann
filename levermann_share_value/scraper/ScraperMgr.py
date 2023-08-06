@@ -56,7 +56,7 @@ def scrape_share_data(share: Share) -> Share:
     return share
 
 
-def load_all_shares_from_fingreen():
+def load_all_shares():
     fingreens: [BasicShare] = fingreen.get_shares()
 
     for bs in fingreens:

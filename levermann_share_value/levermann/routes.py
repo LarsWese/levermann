@@ -27,9 +27,9 @@ def index():
     return render_template('index.html', shares=shares, form=form)
 
 
-@routes.route('/all_fingreen')
-def get_all_fingreen_share():
+@routes.route('/all')
+def get_all_green_share():
     # scraper_mgr.load_everything()
     # lsm.load_everything()
-    lsm.load_shares_from_fingreen()
+    lsm.load_all_shares()
     return redirect(url_for('routes.index'))

@@ -7,6 +7,7 @@ from levermann_share_value.scraper import ScraperMgr as scraperMgr
 from levermann_share_value.scraper import onvista
 
 logger = logging.getLogger(__name__)
+mapper = ShareDataMapper()
 
 
 def get_all_shares() -> [{}]:
@@ -15,12 +16,10 @@ def get_all_shares() -> [{}]:
     for share in shares:
         share_values = share.share_values
         share_data = share.as_dict()
-        mapper = ShareDataMapper(share_values)
-        calculated_values = mapper.calculate()
-        share_data.append(calculated_values)
-
-    get_onvista_url(share_data)
-    result.append(share_data)
+        calculated_values = mapper.calculate(share_values)
+        share_data.update(calculated_values)
+        get_onvista_url(share_data)
+        result.append(share_data)
 
     return result
 
@@ -36,5 +35,5 @@ def get_onvista_url(share_data):
     share_data[constants.onvista_url] = f'{onvista.METRICS_URL}{share_data[constants.isin]}'
 
 
-def load_shares_from_fingreen():
-    scraperMgr.load_all_shares_from_fingreen()
+def load_all_shares():
+    scraperMgr.load_all_shares()

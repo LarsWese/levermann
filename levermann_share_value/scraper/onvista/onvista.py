@@ -139,7 +139,6 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
 
     for fun in fundamental_list:
         item_date = date(year=fun['idYear'], month=1, day=1)
-        # 4, 5, 13 KGV (price-earnings ratio), earnings revision
         if 'cnPer' in fun:
             onvista_datas.append(RawData(
                 name=constants.price_earnings_ratio,
@@ -147,6 +146,7 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
                 related_date=item_date,
                 fetch_date=today
             ))
+        # 4, 5, 13 KGV (earnings_per_share ratio), earnings revision
         if 'cnEPSAdj' in fun:
             onvista_datas.append(RawData(
                 name=constants.earnings_per_share,

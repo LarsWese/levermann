@@ -25,7 +25,7 @@
 
         <div class="row my-3">
             <div class="col-auto">
-                <a href="{{ url_for('routes.get_all_fingreen_share') }}" type="button" class="btn btn-danger">all
+                <a href="{{ url_for('routes.get_all_green_share') }}" type="button" class="btn btn-danger">all
                     fingreen shares</a>
             </div>
         </div>
@@ -75,14 +75,14 @@
                                         {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point']) }}
                                     {% endif %}
                                     {% if share.return_equity %}
-                                        {{ valuePoint('return on equity', share.return_equity['value'], share.return_equity['point']) }}
+                                        {{ valuePoint('return on equity ly', share.return_equity['value'], share.return_equity['point']) }}
                                     {% endif %}
                                     {% if share.equity_ratio_in_percent %}
                                         {{ valuePoint('equity ratio', share.equity_ratio_in_percent['value'], share.equity_ratio_in_percent['point']) }}
                                     {% endif %}
-                                    {#                                    {% if share.price_earnings_ratio %}#}
-                                    {#                                        {{ valuePoint('price_earnings_ratio', share.price_earnings_ratio['value'], share.price_earnings_ratio['point']) }}#}
-                                    {#                                    {% endif %}#}
+                                    {% if share.price_earnings_ratio %}
+                                        {{ valuePoint('price_earnings_ratio 5y', share.price_earnings_ratio['value'], share.price_earnings_ratio['point']) }}
+                                    {% endif %}
                                 </div>
 
                             </div>
@@ -100,7 +100,7 @@
 {% endblock %}
 
 {% macro valuePoint(name, value, point) %}
-    <div class="row m-2 {% if point == 1 %} text-success {% endif %}">
+    <div class="row m-2 {% if point == 1 %} text-success {% elif point == -1 %} text-danger {% endif %}">
         <div class="col text-start">{{ name }}:</div>
         <div class="col text-start">{{ value | numberformat }}%</div>
         <div class="col text-end">{{ point }}</div>
