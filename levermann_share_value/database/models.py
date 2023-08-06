@@ -59,7 +59,7 @@ class Share(db.Model):
     def __repr__(self):
         return f'{self.name} {self.description} {self.isin}'
 
-    def as_dict(self):
+    def as_dict(self) -> {}:
         share_data = {'id': self.id,
                       'isin': self.isin,
                       'wkn': self.wkn,

@@ -62,31 +62,34 @@
                                     <p class="card-text">{{ share.long_description_de }}</p>
                                 </div>
                                 <p class="card-text">{{ share.sector }} / {{ share.branch }}</p>
-                                {% if share.market_capitalization %}
-                                    <p class="card-text">
-                                        MarketCap: {{ share.market_capitalization|currencyformat('EUR') }}</p>
-                                {% endif %}
-                                {% if share.ebit_margin %}
-                                    <p class="card-text">ebit
-                                        margin: {{ share.ebit_margin['value'] }} {{ share.ebit_margin['point'] }}</p>
-                                {% endif %}
-                                {% if share.return_equity %}
-                                    <p class="card-text">return on
-                                        equity: {{ share.return_equity['value'] }} {{ share.return_equity['point'] }}</p>
-                                {% endif %}
-                                {% if share.equity_ratio_in_percent %}
-                                    <p class="card-text">equity
-                                        ratio: {{ share.equity_ratio_in_percent['value'] }} {{ share.equity_ratio_in_percent['point'] }}</p>
-                                {% endif %}
-                                {% if share.price_earnings_ratio %}
-                                    <p class="card-text">
-                                        price_earnings_ratio: {{ share.price_earnings_ratio['value'] }} {{ share.price_earnings_ratio['point'] }}</p>
-                                {% endif %}
+                                <div class="container">
+
+                                    {% if share.market_capitalization %}
+                                        <div class="row m-2">
+                                            <div class="col text-start"> MarketCap:</div>
+                                            <div class="col text-start">{{ share.market_capitalization|currencyformat('EUR') }}</div>
+                                            <div class="col"></div>
+                                        </div>
+                                    {% endif %}
+                                    {% if share.ebit_margin %}
+                                        {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point']) }}
+                                    {% endif %}
+                                    {% if share.return_equity %}
+                                        {{ valuePoint('return on equity', share.return_equity['value'], share.return_equity['point']) }}
+                                    {% endif %}
+                                    {% if share.equity_ratio_in_percent %}
+                                        {{ valuePoint('equity ratio', share.equity_ratio_in_percent['value'], share.equity_ratio_in_percent['point']) }}
+                                    {% endif %}
+                                    {#                                    {% if share.price_earnings_ratio %}#}
+                                    {#                                        {{ valuePoint('price_earnings_ratio', share.price_earnings_ratio['value'], share.price_earnings_ratio['point']) }}#}
+                                    {#                                    {% endif %}#}
+                                </div>
 
                             </div>
                             <div class="card-footer">
                                 <p class="card-text">symbol: {{ share.symbol }}, wkn: {{ share.wkn }}</p>
-                                <p class="card-text"><a href="{{ share['onvista_url'] }}" target="_blank">onvista</a></p>
+                                <p class="card-text"><a href="{{ share['onvista_url'] }}" target="_blank">onvista</a>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -94,6 +97,12 @@
             </div>
         </div>
     </div>
-
-
 {% endblock %}
+
+{% macro valuePoint(name, value, point) %}
+    <div class="row m-2 {% if point == 1 %} text-success {% endif %}">
+        <div class="col text-start">{{ name }}:</div>
+        <div class="col text-start">{{ value | numberformat }}%</div>
+        <div class="col text-end">{{ point }}</div>
+    </div>
+{% endmacro %}
