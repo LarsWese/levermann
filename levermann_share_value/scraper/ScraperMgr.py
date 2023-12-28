@@ -16,47 +16,40 @@ from levermann_share_value.scraper.raw_data import RawData, BasicShare
 logger = logging.getLogger(__name__)
 
 
-def scrape_share_data(share: Share) -> Share:
+def scrape_share_data(share: Share):
     """
     get the share with the given name
     :param share:
     :return:
     """
     logger.info(f'scrape share with isin {share.isin}')
-    share_raw_data: {str: [RawData]} = onvista.scrape(share.isin, datetime.utcnow())
+    share_raw_data: {str: [RawData]} = {}
+    try:
+        share_raw_data: {str: [RawData]} = onvista.scrape(share.isin, datetime.utcnow())
+    except ShareNotExist:
+        logger.warning(f'share with isin {share.isin} does not exist')
+
     if len(share_raw_data) <= 0:
         return share
     __map_share_data(share, share_raw_data['metadata'])
-    # get share details
-    session = Session(db.engine)
 
     logger.info(f"Get metrics for {share.isin} shareId: {share.id}")
     if len(share.isin) > 0 and share is not None:
         share_values: [ShareValue] = []
-        stored_share_values: [ShareValue] = None
-        if len(share.share_values) > 0:
-            stored_share_values = share.share_values
-
         for ov_data in share_raw_data['metrics']:
-            if not stored_share_values:
+            if not share.share_values:
                 share_value: ShareValue = __map_to_share_value(share.id, ov_data)
                 share_values.append(share_value)
             else:
                 # check if data is already stored - need to check if it is the same
-                stored = False
-                for stored_share_value in stored_share_values:
-                    if stored_share_value.exists(ov_data.name, str(ov_data.value), ov_data.related_date):
-                        stored = True
-                        break
-                if not stored:
-                    share_value: ShareValue = __map_to_share_value(share.id, ov_data)
-                    share_values.append(share_value)
-        session.add_all(share_values)
-        session.commit()
-    return share
+                for stored_share_value in share.share_values:
+                    if not stored_share_value.exists(ov_data.name, str(ov_data.value), ov_data.related_date):
+                        share_value: ShareValue = __map_to_share_value(share.id, ov_data)
+                        share_values.append(share_value)
+        share.share_values = share_values
 
 
-def load_all_shares():
+def load_all_fingreen_shares():
     fingreens: [BasicShare] = fingreen.get_shares()
 
     for bs in fingreens:
@@ -65,11 +58,12 @@ def load_all_shares():
         share.name = bs.name
         share.short_description_de = bs.description
         share.green = True
+        scrape_share_data(share)
         db.session.add(share)
     db.session.commit()
 
-    shares: [Share] = Share.query.all()
-    load_ov_data(shares)
+    # shares: [Share] = Share.query.all()
+    # load_ov_data(shares)
 
 
 def load_ov_data(shares: [Share]):
@@ -77,6 +71,7 @@ def load_ov_data(shares: [Share]):
         if not share.wkn:
             try:
                 scrape_share_data(share)
+                db.session.add(share)
             except ShareNotExist as sne:
                 logger.warning(f'could not find share with isin {share.isin} {sne}')
 

@@ -52,6 +52,9 @@
                                     {% else %}
                                         Small Mid Cap
                                     {% endif %}
+                                    {% if share.green == true %}
+                                        <span style="float:right;"><i class="bi bi-check-circle text-success"></i></span>
+                                    {% endif %}
                                 </h5>
                                 <p class="card-subtitle mb-2 text-body-secondary">
                                     <a data-bs-toggle="collapse" href="#{{ share.id }}" role="button"
@@ -72,16 +75,22 @@
                                         </div>
                                     {% endif %}
                                     {% if share.ebit_margin %}
-                                        {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point']) }}
+                                        {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point'], '%') }}
                                     {% endif %}
                                     {% if share.return_equity %}
-                                        {{ valuePoint('return on equity ly', share.return_equity['value'], share.return_equity['point']) }}
+                                        {{ valuePoint('return on equity ly', share.return_equity['value'], share.return_equity['point'], '%') }}
                                     {% endif %}
                                     {% if share.equity_ratio_in_percent %}
-                                        {{ valuePoint('equity ratio', share.equity_ratio_in_percent['value'], share.equity_ratio_in_percent['point']) }}
+                                        {{ valuePoint('equity ratio', share.equity_ratio_in_percent['value'], share.equity_ratio_in_percent['point'], '%') }}
                                     {% endif %}
-                                    {% if share.price_earnings_ratio %}
-                                        {{ valuePoint('price_earnings_ratio 5y', share.price_earnings_ratio['value'], share.price_earnings_ratio['point']) }}
+                                    {% if share.price_earnings_ratio_5y %}
+                                        {{ valuePoint('price_earnings_ratio 5y', share.price_earnings_ratio_5y['value'], share.price_earnings_ratio_5y['point']) }}
+                                    {% endif %}
+                                    {% if share.price_earnings_ratio_ay %}
+                                        {{ valuePoint('price_earnings_ratio ay', share.price_earnings_ratio_ay['value'], share.price_earnings_ratio_ay['point']) }}
+                                    {% endif %}
+                                    {% if share.profit_growth %}
+                                        {{ valuePoint('profit Growth', share.profit_growth['value'], share.profit_growth['point']) }}
                                     {% endif %}
                                 </div>
 
@@ -99,10 +108,10 @@
     </div>
 {% endblock %}
 
-{% macro valuePoint(name, value, point) %}
+{% macro valuePoint(name, value, point, unit) %}
     <div class="row m-2 {% if point == 1 %} text-success {% elif point == -1 %} text-danger {% endif %}">
         <div class="col text-start">{{ name }}:</div>
-        <div class="col text-start">{{ value | numberformat }}%</div>
+        <div class="col text-start">{{ value }} {{ unit }}</div>
         <div class="col text-end">{{ point }}</div>
     </div>
 {% endmacro %}

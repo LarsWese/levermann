@@ -136,6 +136,14 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
                 related_date=item_date,
                 fetch_date=today
             ))
+        # 4, 5, 13 KGV (earnings_per_share ratio), earnings revision
+        if 'cnEpsAdj' in fin:
+            onvista_datas.append(RawData(
+                name=constants.earnings_per_share,
+                value=fin['cnEpsAdj'],
+                related_date=item_date,
+                fetch_date=today
+            ))
 
     for fun in fundamental_list:
         item_date = date(year=fun['idYear'], month=1, day=1)
@@ -146,14 +154,7 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
                 related_date=item_date,
                 fetch_date=today
             ))
-        # 4, 5, 13 KGV (earnings_per_share ratio), earnings revision
-        if 'cnEPSAdj' in fun:
-            onvista_datas.append(RawData(
-                name=constants.earnings_per_share,
-                value=fun['cnEPSAdj'],
-                related_date=item_date,
-                fetch_date=today
-            ))
+
 
     # entity value (some id)
     quote = snapshot["quote"]
@@ -253,8 +254,10 @@ def __get_stock_price(today: datetime, id_notation: str, entity_value: str, isin
 if __name__ == '__main__':
     # raw_data = ov.get_meta_data('DE000A0WMPJ6', datetime.utcnow()) # aixtron
     # raw_data = ov.get_meta_data('DE000A3MQC70', datetime.utcnow())  # aixtron
-    # raw_data = ov.get_meta_data('US79466L3024', datetime.utcnow()) # Salesforce
+    # raw_data = __get_meta_data('US79466L3024', datetime.utcnow()) # Salesforce
     # raw_data = ov.get_meta_data('US02079K3059', datetime.utcnow()) # alphabet
     # __get_meta_data('DE000A0WMPJ6', datetime.utcnow())
     # __get_metrics(datetime.utcnow(), 'DE000A0WMPJ6')
-    print(__get_stock_price(datetime.utcnow(), '24865177', '21058705', 'DE000A0WMPJ6'))
+    s = scrape("US79466L3024", datetime.utcnow())
+    print(s)
+    # print(__get_stock_price(datetime.utcnow(), '24865177', '21058705', 'US79466L3024'))

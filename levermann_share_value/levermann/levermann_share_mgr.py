@@ -1,5 +1,6 @@
 import logging
 
+from levermann_share_value import db
 from levermann_share_value.database.models import Share
 from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.mapper import ShareDataMapper
@@ -26,8 +27,11 @@ def get_all_shares() -> [{}]:
 
 def get_share_by_isin(isin: str) -> Share:
     share: Share = Share.query.filter(Share.isin == isin).first()
-    if share is None or not share.share_values.all():
-        share = scraperMgr.scrape_share_data(share=Share(isin=isin))
+    if share is None:
+        share = Share(isin=isin)
+    scraperMgr.scrape_share_data(share=share)
+    db.session.add(share)
+    db.session.commit()
     return share
 
 
@@ -36,4 +40,4 @@ def get_onvista_url(share_data):
 
 
 def load_all_shares():
-    scraperMgr.load_all_shares()
+    scraperMgr.load_all_fingreen_shares()
