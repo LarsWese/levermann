@@ -111,7 +111,11 @@
 {% macro valuePoint(name, value, point, unit) %}
     <div class="row m-2 {% if point == 1 %} text-success {% elif point == -1 %} text-danger {% endif %}">
         <div class="col text-start">{{ name }}:</div>
-        <div class="col text-start">{{ value }} {{ unit }}</div>
+        {% if value is number %}
+            <div class="col text-start">{{ "%.2f"|format(value) }} {{ unit }}</div>
+        {% else %}
+            <div class="col text-start">{{ value }} {{ unit }}</div>
+        {% endif %}
         <div class="col text-end">{{ point }}</div>
     </div>
 {% endmacro %}
