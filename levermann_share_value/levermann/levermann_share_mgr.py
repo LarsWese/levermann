@@ -1,7 +1,7 @@
 import logging
 
 from levermann_share_value import db
-from levermann_share_value.database.models import Share
+from levermann_share_value.database.models import Share, ShareType
 from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.mapper import ShareDataMapper
 from levermann_share_value.scraper import ScraperMgr as scraperMgr
@@ -31,6 +31,13 @@ def get_share_by_isin(isin: str) -> Share:
         share = Share(isin=isin)
     scraperMgr.scrape_share_data(share=share)
     db.session.add(share)
+    db.session.commit()
+    return share
+
+
+def change_type(share_id: int, new_type: int) -> Share:
+    share: Share = Share.query.get(share_id)
+    share.share_type = ShareType(new_type)
     db.session.commit()
     return share
 

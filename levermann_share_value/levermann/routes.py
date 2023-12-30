@@ -1,9 +1,9 @@
+import logging
+
 from flask import render_template, request, Blueprint, flash, redirect, url_for
 
-from levermann_share_value.levermann.forms import SearchFrom
 from levermann_share_value.levermann import levermann_share_mgr as lsm
-from levermann_share_value.database.models import Share
-import logging
+from levermann_share_value.levermann.forms import SearchFrom
 
 # TODO - Button for loading share data
 # TODO - LInk to page which loads shares from DB
@@ -19,12 +19,21 @@ def index():
         isin = form.isin.data
         flash(f'Search for {isin}')
         logger.info(f"form for {isin} submitted")
-        share: Share = lsm.get_share_by_isin(isin)
+        lsm.get_share_by_isin(isin)
         return redirect(url_for('routes.index'))
     elif isin is not None:
         lsm.get_share_by_isin(isin)
     shares: list = lsm.get_all_shares()
     return render_template('index.html', shares=shares, form=form)
+
+
+@routes.route('/change_type', methods=['POST'])
+def change_type():
+    changed_share__type = int(request.form.get('change_type'))
+    share_id = int(request.form.get('share_id'))
+    logger.info(f'Received: Share ID={share_id}, Change Type={change_type}')
+    lsm.change_type(share_id, changed_share__type)
+    return redirect(url_for('routes.index'))
 
 
 @routes.route('/all')

@@ -1,8 +1,9 @@
+import enum
 from datetime import datetime, date
 from enum import IntEnum
 
 from sqlalchemy.orm import Mapped
-
+from sqlalchemy import Enum
 from levermann_share_value import db
 
 
@@ -32,6 +33,9 @@ class ShareValue(db.Model):
     def __repr__(self):
         return f'{self.name} {self.value} {self.related_date}'
 
+class ShareType(enum.Enum):
+    None_Finance = 1
+    Finance = 2
 
 class Share(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
@@ -53,6 +57,7 @@ class Share(db.Model):
     long_description_en: str = db.Column(db.String)
     short_description_de: str = db.Column(db.String)
     green: bool = db.Column(db.Boolean, default=False)
+    share_type: str = db.Column(Enum(ShareType), default=ShareType.None_Finance.value, nullable=False)
     share_values: Mapped[ShareValue] = db.relationship('ShareValue')
     index_id = db.Column(db.Integer, db.ForeignKey('indices.id'))
 
@@ -78,6 +83,7 @@ class Share(db.Model):
                       'long_description_de': self.long_description_de,
                       'long_description_en': self.long_description_en,
                       'green': self.green,
+                      'share_type': self.share_type,
                       'short_description_de': self.short_description_de}
         return share_data
 

@@ -53,9 +53,31 @@
                                         Small Mid Cap
                                     {% endif %}
                                     {% if share.green == true %}
-                                        <span style="float:right;"><i class="bi bi-check-circle text-success"></i></span>
+                                        <span style="float:right;"><i
+                                                class="bi bi-check-circle text-success"></i></span>
                                     {% endif %}
                                 </h5>
+                                <div class="container">
+                                    <form action="/change_type" method="post" class="form-inline row">
+                                        <div class="col">
+                                            <input type="hidden" name="share_id" class="form-control"
+                                                   value="{{ share.id }}"/>
+                                            <select name="change_type" class="form-control">
+                                                <option value="2"
+                                                        {% if share.share_type.value == 2 %}selected{% endif %}>
+                                                    Finance
+                                                </option>
+                                                <option value="1"
+                                                        {% if share.share_type.value == 1 %}selected{% endif %}>
+                                                    None_Finance
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <input type="submit" value="Change" class="btn btn-primary"/>
+                                        </div>
+                                    </form>
+                                </div>
                                 <p class="card-subtitle mb-2 text-body-secondary">
                                     <a data-bs-toggle="collapse" href="#{{ share.id }}" role="button"
                                        aria-expanded="false"
@@ -74,11 +96,11 @@
                                             <div class="col"></div>
                                         </div>
                                     {% endif %}
-                                    {% if share.ebit_margin %}
-                                        {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point'], '%') }}
-                                    {% endif %}
                                     {% if share.return_equity %}
                                         {{ valuePoint('return on equity ly', share.return_equity['value'], share.return_equity['point'], '%') }}
+                                    {% endif %}
+                                    {% if share.ebit_margin %}
+                                        {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point'], '%') }}
                                     {% endif %}
                                     {% if share.equity_ratio_in_percent %}
                                         {{ valuePoint('equity ratio', share.equity_ratio_in_percent['value'], share.equity_ratio_in_percent['point'], '%') }}
@@ -88,6 +110,15 @@
                                     {% endif %}
                                     {% if share.price_earnings_ratio_ay %}
                                         {{ valuePoint('price_earnings_ratio ay', share.price_earnings_ratio_ay['value'], share.price_earnings_ratio_ay['point']) }}
+                                    {% endif %}
+                                    {% if share.course_m6_comparison %}
+                                        {{ valuePoint('course m6 compare', share.course_m6_comparison['value'], share.course_m6_comparison['point']) }}
+                                    {% endif %}
+                                    {% if share.course_y1_comparison %}
+                                        {{ valuePoint('course y1 compare', share.course_y1_comparison['value'], share.course_y1_comparison['point']) }}
+                                    {% endif %}
+                                    {% if share.course_momentum %}
+                                        {{ valuePoint('course momentum', share.course_momentum['value'], share.course_momentum['point']) }}
                                     {% endif %}
                                     {% if share.profit_growth %}
                                         {{ valuePoint('profit Growth', share.profit_growth['value'], share.profit_growth['point']) }}

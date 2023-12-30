@@ -3,10 +3,9 @@ import logging
 from datetime import datetime, date
 
 from dateutil import relativedelta
-from sqlalchemy.orm import Session
 
 from levermann_share_value import db
-from levermann_share_value.database.models import Share, ShareValue
+from levermann_share_value.database.models import Share, ShareValue, ShareType
 from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.exceptions import ShareNotExist
 from levermann_share_value.scraper.fingreen import fingreen
@@ -58,6 +57,7 @@ def load_all_fingreen_shares():
         share.name = bs.name
         share.short_description_de = bs.description
         share.green = True
+        share.share_type = ShareType.None_Finance
         scrape_share_data(share)
         db.session.add(share)
     db.session.commit()
@@ -93,7 +93,6 @@ def __get_next_quarter(fiscal_year_end: date, now: date) -> date:
 
 def __map_share_data(share: Share, share_meta_datas: [RawData], today: date = date.today()):
     """
-    TODO - get the metadata which I get normally from fingreen
     :param today:
     :param share_meta_datas:
     :param share:
@@ -131,6 +130,8 @@ def __map_share_data(share: Share, share_meta_datas: [RawData], today: date = da
         elif smd.name == constants.last_fiscal_year:
             if len(smd.value) > 0:
                 share.last_fiscal_year = date.fromisoformat(smd.value)
+
+    share.share_type = ShareType.None_Finance
 
     if share.next_quarter:
         share.next_quarter = __get_next_quarter(share.last_fiscal_year, today)
