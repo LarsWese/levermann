@@ -30,7 +30,7 @@ dictConfig({
     }
     },
     'root': {
-        'level': 'DEBUG',
+        'level': 'INFO',
         'handlers': ['console', 'file']
     }
 })
@@ -62,7 +62,7 @@ def create_app() -> Flask:
         logging.getLogger(__name__).info("Tables created")
 
     Migrate(app, db)
-    from levermann_share_value.levermann.routes import routes
+    from levermann.routes import routes
     app.register_blueprint(routes)
     return app
 

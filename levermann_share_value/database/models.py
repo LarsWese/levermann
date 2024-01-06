@@ -2,8 +2,9 @@ import enum
 from datetime import datetime, date
 from enum import IntEnum
 
-from sqlalchemy.orm import Mapped
 from sqlalchemy import Enum
+from sqlalchemy.orm import Mapped
+
 from levermann_share_value import db
 
 
@@ -20,22 +21,24 @@ class ShareType(IntEnum):
 
 class ShareValue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name: str = db.Column(db.String, nullable=False, index=True)
-    related_date: date = db.Column(db.Date, index=True, nullable=False)
+    name: str = db.Column(db.String, nullable=False)
+    related_date: str = db.Column(db.String, nullable=False)
     value: str = db.Column(db.String, nullable=False)
-    fetch_date: datetime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    fetch_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
     share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
-    db.UniqueConstraint(share_id, related_date, value)
+    db.UniqueConstraint(share_id, name, related_date, value)
 
     def exists(self, name: str, value: str, related_date: date) -> bool:
-        return name == self.name and value == self.value and related_date == self.related_date
+        return name == self.name and value == self.value and related_date == self.related_date and name == self.name
 
     def __repr__(self):
         return f'{self.name} {self.value} {self.related_date}'
 
+
 class ShareType(enum.Enum):
     None_Finance = 1
     Finance = 2
+
 
 class Share(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)

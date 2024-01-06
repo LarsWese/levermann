@@ -4,8 +4,8 @@ from datetime import date
 import pandas as pd
 from yahooquery import Ticker
 
-from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5, nearest_coming_weekday_date
-from levermann_share_value.scraper.raw_data import RawData
+from scraper import get_weekdays_m6_nearest_today_y1_y5, nearest_coming_weekday_date
+from scraper.raw_data import RawData
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 

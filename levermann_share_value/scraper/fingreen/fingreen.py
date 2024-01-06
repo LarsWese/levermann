@@ -3,8 +3,8 @@ import logging
 import requests
 from bs4 import BeautifulSoup, ResultSet
 
-from levermann_share_value.scraper import headers
-from levermann_share_value.scraper.raw_data import BasicShare
+from scraper import headers
+from scraper.raw_data import BasicShare
 
 BASE_URL = "https://www.fingreen.de"
 URL = BASE_URL + "/gruene-Aktien"
@@ -28,7 +28,7 @@ def get_shares() -> list[BasicShare]:
                 name = detail.text
                 isin = get_isin(detail['href'])
                 description = find_all[2].text
-                result.append(BasicShare(name=name, isin=isin, description=description))
+                result.append(BasicShare(name=name, isin=isin, description=description, green=True))
 
     return result
 

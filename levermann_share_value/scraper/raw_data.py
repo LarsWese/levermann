@@ -17,4 +17,5 @@ class RawData:
 class BasicShare:
     isin: str
     name: str
+    green: bool
     description: str

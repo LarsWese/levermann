@@ -5,10 +5,10 @@ from datetime import datetime, date
 
 import requests
 
-from levermann_share_value.levermann import constants
-from levermann_share_value.scraper import headers, get_end_of_last_3_month
-from levermann_share_value.scraper.onvista import BASE_URL, json_data
-from levermann_share_value.scraper.raw_data import RawData
+from levermann import constants
+from scraper import headers, get_end_of_last_3_month
+from scraper.onvista import BASE_URL, json_data
+from scraper.raw_data import RawData
 
 logger = logging.getLogger(__name__)
 

@@ -4,12 +4,12 @@ from datetime import date, datetime
 
 import requests
 
-from levermann_share_value.levermann import constants
-from levermann_share_value.levermann.exceptions import ShareNotExist
-from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5, get_end_of_last_3_month
-from levermann_share_value.scraper import headers
-from levermann_share_value.scraper.onvista import json_data, METRICS_URL, COMPANY_PROFILE
-from levermann_share_value.scraper.raw_data import RawData
+from levermann import constants
+from levermann.exceptions import ShareNotExist
+from scraper import get_weekdays_m6_nearest_today_y1_y5, get_end_of_last_3_month
+from scraper import headers
+from scraper.onvista import json_data, METRICS_URL, COMPANY_PROFILE, analyzer_recommendation_url
+from scraper.raw_data import RawData
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,28 @@ def scrape(isin: str, now: datetime) -> {str: [RawData]}:
         elif metric.name == "id_notation":
             id_notation = metric.value
     stock_price: [RawData] = __get_stock_price(now, id_notation, entity_value, isin)
-    return {'metadata': metadata, 'metrics': metrics + stock_price}
+    analyzer_recommendations: [RawData] = __get_analyzer_recommendation(entity_value, now)
+
+    return dict(metadata=metadata, metrics=metrics + stock_price + analyzer_recommendations)
+
+
+def __get_analyzer_recommendation(entity_value: str, now: datetime) -> [RawData]:
+    result: [RawData] = []
+    response = requests.get(analyzer_recommendation_url(entity_value), headers=headers)
+    response.encoding = 'utf-8'
+    try:
+        data = json.loads(response.text)
+        if 'numBuy' in data:
+            result.append(RawData(name=constants.numBuy, value=data['numBuy'], fetch_date=now, related_date=now))
+        if 'numHold' in data:
+            result.append(RawData(name=constants.numHold, value=data['numHold'], fetch_date=now, related_date=now))
+        if 'numSell' in data:
+            result.append(RawData(name=constants.numSell, value=data['numSell'], fetch_date=now, related_date=now))
+        if 'numTotal' in data:
+            result.append(RawData(name=constants.numTotal, value=data['numTotal'], fetch_date=now, related_date=now))
+    except AttributeError:
+        raise ShareNotExist(entity_value)
+    return result
 
 
 def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
@@ -39,7 +60,10 @@ def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     result: [RawData] = []
     response = requests.get(f"{COMPANY_PROFILE}{isin_}", headers=headers)
     response.encoding = 'utf-8'
-    data = convert_to_json(response.text, isin_)
+    try:
+        data = convert_to_json(response.text)
+    except AttributeError:
+        raise ShareNotExist(isin_)
 
     try:
         props_data_ = data['props']['pageProps']['data']
@@ -84,12 +108,8 @@ def __get_meta_data(isin_: str, now: datetime) -> [RawData]:
     return result
 
 
-def convert_to_json(response, isin_):
-    try:
-        data = json_data(response, logger)
-    except AttributeError:
-        raise ShareNotExist(isin_)
-    return data
+def convert_to_json(response):
+    return json_data(response, logger)
 
 
 def __get_metrics(today: datetime, isin: str) -> [RawData]:
@@ -97,7 +117,10 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
     logger.info(f"url for metrics {url}")
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
-    data = convert_to_json(response.text, isin)
+    try:
+        data = convert_to_json(response.text)
+    except AttributeError:
+        raise ShareNotExist(isin)
 
     # when no financial Data the share does not exist in onvista
     try:
@@ -111,7 +134,8 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
         raise ShareNotExist(isin)
 
     for fin in financial_list:
-        item_date = date(year=fin['idYear'], month=1, day=1)
+        # TODO - get Label look if it contains an e at the end and adjust the data?
+        item_date = fin['label']
         # 3 Eigenkapitalquote in % yearly
         if 'cnEquityRatio' in fin:
             onvista_datas.append(RawData(
@@ -154,7 +178,6 @@ def __get_metrics(today: datetime, isin: str) -> [RawData]:
                 related_date=item_date,
                 fetch_date=today
             ))
-
 
     # entity value (some id)
     quote = snapshot["quote"]

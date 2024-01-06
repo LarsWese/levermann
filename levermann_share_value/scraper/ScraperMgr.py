@@ -5,12 +5,13 @@ from datetime import datetime, date
 from dateutil import relativedelta
 
 from levermann_share_value import db
-from levermann_share_value.database.models import Share, ShareValue, ShareType
-from levermann_share_value.levermann import constants
-from levermann_share_value.levermann.exceptions import ShareNotExist
-from levermann_share_value.scraper.fingreen import fingreen
-from levermann_share_value.scraper.onvista import onvista
-from levermann_share_value.scraper.raw_data import RawData, BasicShare
+from database.models import Share, ShareValue, ShareType
+from levermann import constants
+from levermann.exceptions import ShareNotExist
+from scraper.fingreen import fingreen
+from scraper.ecoreporter import ecoreporter
+from scraper.onvista import onvista
+from scraper.raw_data import RawData, BasicShare
 
 logger = logging.getLogger(__name__)
 
@@ -48,22 +49,12 @@ def scrape_share_data(share: Share):
         share.share_values = share_values
 
 
-def load_all_fingreen_shares():
-    fingreens: [BasicShare] = fingreen.get_shares()
+def load_all_fingreen_shares() -> list[BasicShare]:
+    return fingreen.get_shares()
 
-    for bs in fingreens:
-        share: Share = Share()
-        share.isin = bs.isin
-        share.name = bs.name
-        share.short_description_de = bs.description
-        share.green = True
-        share.share_type = ShareType.None_Finance
-        scrape_share_data(share)
-        db.session.add(share)
-    db.session.commit()
 
-    # shares: [Share] = Share.query.all()
-    # load_ov_data(shares)
+def load_all_ecoreporter_shares():
+    return ecoreporter.scrape_ecoreporter()
 
 
 def load_ov_data(shares: [Share]):
