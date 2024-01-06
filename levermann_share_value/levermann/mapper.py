@@ -1,8 +1,8 @@
 import logging
 from datetime import date
 
-from database.models import ShareValue
-from levermann import constants as cs
+from levermann_share_value.database.models import ShareValue
+from levermann_share_value.levermann import constants as cs
 
 
 def to_dict(share_values: [ShareValue]) -> {}:

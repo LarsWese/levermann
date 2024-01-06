@@ -1,6 +1,6 @@
 import unittest
-from levermann.mapper import get_last_year_value
-from database.models import ShareValue
+from levermann_share_value.levermann.mapper import get_last_year_value
+from levermann_share_value.database.models import ShareValue
 
 
 class MyTestCase(unittest.TestCase):

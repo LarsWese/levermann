@@ -1,12 +1,12 @@
 import logging
 
 from levermann_share_value import db
-from database.models import Share, ShareType
-from levermann import constants
-from levermann.mapper import ShareDataMapper
-from scraper import ScraperMgr as scraperMgr
-from scraper import onvista
-from scraper.raw_data import BasicShare
+from levermann_share_value.database.models import Share, ShareType
+from levermann_share_value.levermann import constants
+from levermann_share_value.levermann.mapper import ShareDataMapper
+from levermann_share_value.scraper import ScraperMgr as scraperMgr
+from levermann_share_value.scraper import onvista
+from levermann_share_value.scraper.raw_data import BasicShare
 
 logger = logging.getLogger(__name__)
 mapper = ShareDataMapper()

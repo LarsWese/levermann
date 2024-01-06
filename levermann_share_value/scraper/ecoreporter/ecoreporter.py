@@ -3,8 +3,8 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 
-from scraper import headers
-from scraper.raw_data import BasicShare
+from levermann_share_value.scraper import headers
+from levermann_share_value.scraper.raw_data import BasicShare
 
 BASE_URL = "https://www.ecoreporter.de/aktienkurse/"
 logger = logging.getLogger(__name__)

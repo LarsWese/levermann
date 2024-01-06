@@ -4,12 +4,12 @@ from datetime import date, datetime
 
 import requests
 
-from levermann import constants
-from levermann.exceptions import ShareNotExist
-from scraper import get_weekdays_m6_nearest_today_y1_y5, get_end_of_last_3_month
-from scraper import headers
-from scraper.onvista import json_data, METRICS_URL, COMPANY_PROFILE, analyzer_recommendation_url
-from scraper.raw_data import RawData
+from levermann_share_value.levermann import constants
+from levermann_share_value.levermann.exceptions import ShareNotExist
+from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5, get_end_of_last_3_month
+from levermann_share_value.scraper import headers
+from levermann_share_value.scraper.onvista import json_data, METRICS_URL, COMPANY_PROFILE, analyzer_recommendation_url
+from levermann_share_value.scraper.raw_data import RawData
 
 logger = logging.getLogger(__name__)
 

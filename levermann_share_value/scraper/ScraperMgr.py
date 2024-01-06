@@ -5,13 +5,13 @@ from datetime import datetime, date
 from dateutil import relativedelta
 
 from levermann_share_value import db
-from database.models import Share, ShareValue, ShareType
-from levermann import constants
-from levermann.exceptions import ShareNotExist
-from scraper.fingreen import fingreen
-from scraper.ecoreporter import ecoreporter
-from scraper.onvista import onvista
-from scraper.raw_data import RawData, BasicShare
+from levermann_share_value.database.models import Share, ShareValue, ShareType
+from levermann_share_value.levermann import constants
+from levermann_share_value.levermann.exceptions import ShareNotExist
+from levermann_share_value.scraper.fingreen import fingreen
+from levermann_share_value.scraper.ecoreporter import ecoreporter
+from levermann_share_value.scraper.onvista import onvista
+from levermann_share_value.scraper.raw_data import RawData, BasicShare
 
 logger = logging.getLogger(__name__)
 
