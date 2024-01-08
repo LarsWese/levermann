@@ -51,21 +51,21 @@ def performance_m3(index_id: str):
         # 9 course today vs 6m every two weeks
         if m1 == day_:
             index_performance.append(RawData(
-                name=constants.course_m1_ago,
+                name=constants.share_price_m1_ago,
                 value=data_["last"][idx],
                 related_date=day_,
                 fetch_date=start_date
             ))
         elif m2 == day_:
             index_performance.append(RawData(
-                name=constants.course_m2_ago,
+                name=constants.share_price_m2_ago,
                 value=data_["last"][idx],
                 related_date=day_,
                 fetch_date=start_date
             ))
         elif m3 == day_:
             index_performance.append(RawData(
-                name=constants.course_m3_ago,
+                name=constants.share_price_m3_ago,
                 value=data_["last"][idx],
                 related_date=day_,
                 fetch_date=start_date

@@ -19,10 +19,11 @@ def scrape_ecoreporter() -> list[BasicShare]:
     for row in rows:
         # Extract the instrument-name
         instrument_name = row.find('td', {'class': 'instrument-name'}).get_text(strip=True)
-        # Extract the link
-        link = row.find('a').get('href').split('/')[-2]
+        # Extract the isin
+        isin = row.find('a').get('href').split('/')[-2]
         # Create a BasicShare object and append it to the result list
-        basic_share = BasicShare(isin=link, name=instrument_name, green=True, description='')
+        basic_share = BasicShare(isin=isin, name=instrument_name, green=True, description='')
+        logger.info(f'add {instrument_name} {isin}')
         result.append(basic_share)
     print(f'{result}')
     return result

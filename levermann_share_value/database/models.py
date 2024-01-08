@@ -1,6 +1,5 @@
 import enum
 from datetime import datetime, date
-from enum import IntEnum
 
 from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped
@@ -8,28 +7,18 @@ from sqlalchemy.orm import Mapped
 from levermann_share_value import db
 
 
-class ShareType(IntEnum):
-    Large_Caps = 1
-    Small_Mid_Caps = 2
-    Finance_Caps = 3
-    Unknown = 4
-
-    @classmethod
-    def choices(cls):
-        return [(key.value, key.name) for key in cls]
-
-
 class ShareValue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name: str = db.Column(db.String, nullable=False)
-    related_date: str = db.Column(db.String, nullable=False)
+    related_date: date = db.Column(db.Date, nullable=False)
     value: str = db.Column(db.String, nullable=False)
     fetch_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    note: str = db.Column(db.String)
     share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
     db.UniqueConstraint(share_id, name, related_date, value)
 
     def exists(self, name: str, value: str, related_date: date) -> bool:
-        return name == self.name and value == self.value and related_date == self.related_date and name == self.name
+        return name == self.name and value == self.value and related_date == self.related_date
 
     def __repr__(self):
         return f'{self.name} {self.value} {self.related_date}'
@@ -53,8 +42,7 @@ class Share(db.Model):
     street: str = db.Column(db.String)
     zip_code: str = db.Column(db.String)
     city: str = db.Column(db.String)
-    last_fiscal_year: date = db.Column(db.Date)
-    next_quarter: date = db.Column(db.Date)
+    market: str = db.Column(db.String)
     logo_url: str = db.Column(db.String)
     long_description_de: str = db.Column(db.String)
     long_description_en: str = db.Column(db.String)
@@ -80,8 +68,6 @@ class Share(db.Model):
                       'street': self.street,
                       'zip_code': self.zip_code,
                       'city': self.city,
-                      'last_fiscal_year': self.last_fiscal_year,
-                      'next_quarter': self.next_quarter,
                       'logo_url': self.logo_url,
                       'long_description_de': self.long_description_de,
                       'long_description_en': self.long_description_en,

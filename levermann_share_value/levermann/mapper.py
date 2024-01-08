@@ -4,6 +4,8 @@ from datetime import date
 from levermann_share_value.database.models import ShareValue
 from levermann_share_value.levermann import constants as cs
 
+logger = logging.getLogger(__name__)
+
 
 def to_dict(share_values: [ShareValue]) -> {}:
     result = {}
@@ -37,8 +39,9 @@ def get_last_year_value(current_year: int, return_equity: [ShareValue]) -> (int,
     found_year = 0
     for r in return_equity:
         # all non estimated
-        if not r.related_date.endswith('e'):
-            return_equity_year[int(r.related_date)] = r.value
+        if not r.note.endswith('e'):
+            related_date: date = r.related_date
+            return_equity_year[int(related_date.year)] = r.value
 
     if current_year in return_equity_year:
         found_year = current_year
@@ -49,15 +52,24 @@ def get_last_year_value(current_year: int, return_equity: [ShareValue]) -> (int,
     return found_year, return_equity_year[found_year]
 
 
+def calculate_last_balance_year(svs: [ShareValue]):
+    year_now = date.today().year
+    for r in range(year_now - 1, year_now - 3, -1):
+        for s in svs:
+            if s.related_date.year == r and not s.note.endswith('e'):
+                logger.info(f'found last balance year {r} with note {s.note} - {s.name}')
+                return r
+
+
 class ShareDataMapper:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.eps_calc = []
         self.eps_now = -1
         self.eps_ny = -1
-        self.course_today = -1
-        self.course_y1_ago = -1
-        self.course_m6_ago = -1
+        self.share_price_today = -1
+        self.share_price_y1_ago = -1
+        self.share_price_m6_ago = -1
         self.share_data = {}
         self.total_points = 0
 
@@ -66,19 +78,29 @@ class ShareDataMapper:
         self.eps_now = -9999
         self.eps_ny = -9999
         self.share_data = {}
-        self.course_today = -9999
-        self.course_m6_ago = -9999
-        self.course_y1_ago = -9999
+        self.share_price_today = -9999
+        self.share_price_m6_ago = -9999
+        self.share_price_y1_ago = -9999
         self.total_points = 0
 
         svs = to_dict(share_values)
 
+        last_balance_year: int = 0
+        if cs.last_balance_year in svs:
+            last_balance_year = int(svs[cs.last_balance_year][0].value)
+        else:
+            if cs.ebit_margin in svs:
+                last_balance_year = calculate_last_balance_year(svs[cs.ebit_margin])
+        if last_balance_year == 0:
+            logger.warning(f'no last_balance_year - take default year - 1; {share_values}')
+            last_balance_year = date.today().year - 1
+        self.share_data[cs.last_balance_year] = last_balance_year
         self.__get_large_cap(svs)
-        self.__get_ebit_marge(svs)
-        self.__get_equity_ratio(svs)
-        self.__get_return_equity_ly(svs)
-        self.__get_eps(svs)
-        self.__get_course(svs)
+        self.__get_ebit_marge(svs, last_balance_year)
+        self.__get_equity_ratio(svs, last_balance_year)
+        self.__get_return_equity_ly(svs, last_balance_year)
+        self.__get_eps(svs, last_balance_year)
+        self.__get_share_price(svs)
         self.__get_analysts(svs)
         self.__calculate_per()
         self.__calculate_momentum()
@@ -113,28 +135,34 @@ class ShareDataMapper:
             self.share_data[cs.large_cap] = is_large_cap(float(market_cap.value))
             self.share_data[cs.market_capitalization] = float(market_cap.value)
 
-    def __get_return_equity_ly(self, svs: {str: [ShareValue]}) -> None:
+    def __get_return_equity_ly(self, svs: {str: [ShareValue]}, last_balance_year: int) -> None:
         if cs.return_equity in svs:
             return_equity: [ShareValue] = svs[cs.return_equity]
-            found_year, return_equity_found = get_last_year_value(date.today().year, return_equity)
-            if found_year > 0:
-                self.__calculate_points(cs.return_equity, float(return_equity_found), 10, 20)
+            if last_balance_year > 0:
+                for re in return_equity:
+                    if re.related_date.year == last_balance_year:
+                        self.__calculate_points(cs.return_equity, float(re.value), 10, 20)
+                        break
 
-    def __get_ebit_marge(self, svs: {str: [ShareValue]}) -> None:
+    def __get_ebit_marge(self, svs: {str: [ShareValue]}, last_balance_year: int) -> None:
         if cs.ebit_margin in svs:
             ebit_margin: [ShareValue] = svs[cs.ebit_margin]
-            found_year, ebit_margin_found = get_last_year_value(date.today().year, ebit_margin)
-            if found_year > 0:
-                self.__calculate_points(cs.ebit_margin, float(ebit_margin_found), 6, 12)
+            if last_balance_year > 0:
+                for em in ebit_margin:
+                    if em.related_date.year == last_balance_year:
+                        self.__calculate_points(cs.ebit_margin, float(em.value), 6, 12)
+                        break
 
-    def __get_equity_ratio(self, svs: {str: [ShareValue]}) -> None:
+    def __get_equity_ratio(self, svs: {str: [ShareValue]}, last_balance_year: int) -> None:
         if cs.equity_ratio_in_percent in svs:
             equity_ratio: [ShareValue] = svs[cs.equity_ratio_in_percent]
-            found_year, equity_ratio_found = get_last_year_value(date.today().year, equity_ratio)
-            if found_year > 0:
-                self.__calculate_points(cs.equity_ratio_in_percent, float(equity_ratio_found), 15, 25)
+            if last_balance_year > 0:
+                for em in equity_ratio:
+                    if em.related_date.year == last_balance_year:
+                        self.__calculate_points(cs.equity_ratio_in_percent, float(em.value), 15, 25)
+                        break
 
-    def __get_eps(self, svs: {str: [ShareValue]}):
+    def __get_eps(self, svs: {str: [ShareValue]}, last_balance_year: int) -> None:
         if cs.earnings_per_share in svs:
             eps: [ShareValue] = svs[cs.earnings_per_share]
             year_now: int = date.today().year
@@ -148,20 +176,20 @@ class ShareDataMapper:
                     self.eps_calc.append(value)
 
     def __calculate_momentum(self):
-        point_m6 = self.__calculate_course_diff_and_points(self.course_m6_ago, cs.course_m6_comparison)
-        point_y1 = self.__calculate_course_diff_and_points(self.course_y1_ago, cs.course_y1_comparison)
+        point_m6 = self.__calculate_share_price_diff_and_points(self.share_price_m6_ago, cs.share_price_m6_comparison)
+        point_y1 = self.__calculate_share_price_diff_and_points(self.share_price_y1_ago, cs.share_price_y1_comparison)
 
         # course momentum compare the two courses comparison
-        course_momentum = 0
+        share_price_momentum = 0
         if point_m6 == 1 and (point_y1 == 0 or point_y1 == -1):
-            course_momentum = 1
+            share_price_momentum = 1
         elif point_m6 == -1 and (point_y1 == 0 or point_y1 == 1):
-            course_momentum = -1
-        self.total_points += point_m6 + point_y1 + course_momentum
-        self.share_data[cs.course_momentum] = {'value': f'{point_m6}; {point_y1}',
-                                               'point': course_momentum}
+            share_price_momentum = -1
+        self.total_points += point_m6 + point_y1 + share_price_momentum
+        self.share_data[cs.share_price_momentum] = {'value': f'{point_m6}; {point_y1}',
+                                                    'point': share_price_momentum}
 
-    def __calculate_course_diff_and_points(self, course, constant):
+    def __calculate_share_price_diff_and_points(self, course, constant):
         """
         :param course: The current course value.
         :param constant: The constant value used for calculating points.
@@ -170,7 +198,7 @@ class ShareDataMapper:
         This private method calculates the difference and points for a given course. It takes in a course value and a constant value as parameters. The method first checks if the course value
         * is valid using the private method __is_valid_course().
 
-        If the course value is valid, it then calculates the difference between the current course value (self.course_today) and the given course value.
+        If the course value is valid, it then calculates the difference between the current course value (self.share_price_today) and the given course value.
 
         If the difference is within the range -0.05 and 0.05, the point is set to 0. If the current course value is greater than the given course value, the point is set to 1. If the current
         * course value is less than the given course value, the point is set to -1.
@@ -180,28 +208,28 @@ class ShareDataMapper:
         """
         point = 0
         if is_valid_course(course):
-            diff = 1 - self.course_today / course
+            diff = 1 - self.share_price_today / course
             point = 0
             if -0.05 < diff < 0.05:
                 point = 0
-            elif self.course_today > course:
+            elif self.share_price_today > course:
                 point = 1
-            elif self.course_today < course:
+            elif self.share_price_today < course:
                 point = -1
-            self.share_data[constant] = {'value': f'{self.course_today}; {course}',
+            self.share_data[constant] = {'value': f'{self.share_price_today}; {course}',
                                          'point': point}
         return point
 
-    def __get_course(self, svs: {str: [ShareValue]}):
-        if cs.course_m6_ago in svs:
-            m6_ago = svs[cs.course_m6_ago][0]
-            self.course_m6_ago = float(m6_ago.value)
-        if cs.course_y1_ago in svs:
-            y1_ago = svs[cs.course_y1_ago][0]
-            self.course_y1_ago = float(y1_ago.value)
-        if cs.course_today in svs:
-            today = svs[cs.course_today][0]
-            self.course_today = float(today.value)
+    def __get_share_price(self, svs: {str: [ShareValue]}):
+        if cs.share_price_m6_ago in svs:
+            m6_ago = svs[cs.share_price_m6_ago][0]
+            self.share_price_m6_ago = float(m6_ago.value)
+        if cs.share_price_y1_ago in svs:
+            y1_ago = svs[cs.share_price_y1_ago][0]
+            self.share_price_y1_ago = float(y1_ago.value)
+        if cs.share_price_today in svs:
+            today = svs[cs.share_price_today][0]
+            self.share_price_today = float(today.value)
 
     def __calculate_per(self):
         """
@@ -210,14 +238,14 @@ class ShareDataMapper:
         :return:
         """
         # price earnings ratio total over last 3, this and next year
-        if len(self.eps_calc) == 5:
-            value = self.course_today / (sum(self.eps_calc) / 5)
+        if len(self.eps_calc) == 5 and sum(self.eps_calc) > 0:
+            value = self.share_price_today / (sum(self.eps_calc) / 5)
             point = per_points(value)
             self.share_data[cs.price_earnings_ratio_5y] = {'value': value, 'point': point}
 
         # price earnings ratio now
         if self.eps_now > -9999 and self.eps_now != 0:
-            value = self.course_today / self.eps_now
+            value = self.share_price_today / self.eps_now
             point = per_points(value)
             self.share_data[cs.price_earnings_ratio_ay] = {'value': value, 'point': point}
 

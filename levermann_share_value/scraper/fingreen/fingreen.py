@@ -28,6 +28,7 @@ def get_shares() -> list[BasicShare]:
                 name = detail.text
                 isin = get_isin(detail['href'])
                 description = find_all[2].text
+                logger.info(f'add {name} {isin}')
                 result.append(BasicShare(name=name, isin=isin, description=description, green=True))
 
     return result
