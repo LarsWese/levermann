@@ -36,6 +36,12 @@ def change_type():
     return redirect(url_for('routes.index'))
 
 
+# TODO -change to POST
+@routes.route('/update_all_shares', methods=['GET'])
+def update_all_shares():
+    lsm.update_all_shares()
+
+
 @routes.route('/all')
 def get_all_green_share():
     # scraper_mgr.load_everything()

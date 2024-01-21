@@ -95,10 +95,6 @@ def __get_meta_data(entity_value: str, now: datetime) -> [RawData]:
     return result
 
 
-def convert_to_json(response):
-    return json_data(response, logger)
-
-
 def __get_metrics(today: datetime, isin_: str) -> [RawData]:
     response = requests.get(snapshot_url(isin_), headers=headers)
     response.encoding = 'utf-8'

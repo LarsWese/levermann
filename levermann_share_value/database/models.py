@@ -17,9 +17,6 @@ class ShareValue(db.Model):
     share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
     db.UniqueConstraint(share_id, name, related_date, value)
 
-    def exists(self, name: str, value: str, related_date: date) -> bool:
-        return name == self.name and value == self.value and related_date == self.related_date
-
     def __repr__(self):
         return f'{self.name} {self.value} {self.related_date}'
 
@@ -51,6 +48,10 @@ class Share(db.Model):
     share_type: str = db.Column(Enum(ShareType), default=ShareType.None_Finance.value, nullable=False)
     share_values: Mapped[ShareValue] = db.relationship('ShareValue')
     index_id = db.Column(db.Integer, db.ForeignKey('indices.id'))
+
+    def exists(self, share_value: ShareValue) -> bool:
+        return ShareValue.query.filter(ShareValue.share_id == self.id, ShareValue.name == share_value.name,
+                                       ShareValue.value == share_value.value).first() is not None
 
     def __repr__(self):
         return f'{self.name} {self.description} {self.isin}'
