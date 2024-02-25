@@ -2,7 +2,7 @@ import logging
 
 from flask import render_template, request, Blueprint, flash, redirect, url_for
 
-from levermann_share_value.levermann import levermann_share_mgr as lsm
+from levermann_share_value.scraper import scraper_mgr as lsm
 from levermann_share_value.levermann.forms import SearchFrom
 
 # TODO - Button for loading share data

@@ -1,5 +1,6 @@
 import enum
 from datetime import datetime, date
+from typing import List
 
 from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped
@@ -12,7 +13,7 @@ class ShareValue(db.Model):
     name: str = db.Column(db.String, nullable=False)
     related_date: date = db.Column(db.Date, nullable=False)
     value: str = db.Column(db.String, nullable=False)
-    fetch_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    fetch_date: date = db.Column(db.Date, default=datetime.today())
     note: str = db.Column(db.String)
     share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
     db.UniqueConstraint(share_id, name, related_date, value)
@@ -46,7 +47,7 @@ class Share(db.Model):
     short_description_de: str = db.Column(db.String)
     green: bool = db.Column(db.Boolean, default=False)
     share_type: str = db.Column(Enum(ShareType), default=ShareType.None_Finance.value, nullable=False)
-    share_values: Mapped[ShareValue] = db.relationship('ShareValue')
+    share_values: Mapped[List[ShareValue]] = db.relationship('ShareValue')
     index_id = db.Column(db.Integer, db.ForeignKey('indices.id'))
 
     def exists(self, share_value: ShareValue) -> bool:

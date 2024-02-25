@@ -21,7 +21,7 @@ def is_large_cap(market_cap: float):
     return market_cap >= 5_000_000_000
 
 
-def per_points(value):
+def per_points(value) -> int:
     point = 0
     if value < 12:
         point = 1

@@ -7,6 +7,7 @@ from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
+from flask_apscheduler import APScheduler
 
 DB_NAME = "../instance/levermann.db"
 
@@ -47,6 +48,8 @@ metadata = MetaData(
 
 db: SQLAlchemy = SQLAlchemy(metadata=metadata)
 
+# initialize scheduler
+scheduler = APScheduler()
 
 def create_app() -> Flask:
     app = Flask(__name__, template_folder='templates')
@@ -55,7 +58,9 @@ def create_app() -> Flask:
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
     app.config['BABEL_LANGUAGES'] = ['en', 'de']  # Available languages
     app.config['BABEL_DEFAULT_LOCALE'] = 'de'  # Default locale
+    app.config['SCHEDULER_API_ENABLED'] = True
     db.init_app(app)
+
 
     with app.app_context():
         db.create_all()
@@ -64,7 +69,14 @@ def create_app() -> Flask:
     Migrate(app, db)
     from levermann_share_value.levermann.routes import routes
     app.register_blueprint(routes)
+
+    # if you don't wanna use a config, you can set options here:
+    # scheduler.api_enabled = True
+    scheduler.init_app(app)
+    scheduler.start()
+
     return app
+
 
 def get_locale():
     # if a user is logged in, use the locale from the user settings

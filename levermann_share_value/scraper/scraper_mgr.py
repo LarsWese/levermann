@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 
+from levermann_share_value import scheduler
+
 from levermann_share_value import db
 from levermann_share_value.database.models import Share, ShareType, ShareValue
 from levermann_share_value.levermann import constants
@@ -69,8 +71,8 @@ def load_all_shares():
     batch = 0
     for bs in all_shares:
         share = scrape(bs.isin)
-        share.green = True
         if share:
+            share.green = True
             db.session.add(share)
             if batch % 10 == 0:
                 db.session.commit()
@@ -94,38 +96,29 @@ def scrape(isin: str) -> Share | None:
         return None
 
 
+@scheduler.task('cron', id='scraper_mgr_cron', day='1,14', month='*', hour='7', minute='0')
 def update_all_shares():
-    shares: [Share] = Share.query.all()
-    batch = 0
-    for stored_share in shares:
-        # TODO - add last scrape to share_value and check before scraping again
-        new_share_data: Share = scrape(stored_share.isin)
-        if new_share_data:
-            new_share_value: list[ShareValue] = new_share_data.share_values
-            for share_value in new_share_value:
-                if not stored_share.exists(share_value):
-                    share_value.share_id = stored_share.id
-                    db.session.add(share_value)
-            if batch % 10 == 0:
-                db.session.commit()
-            batch += 1
-    db.session.commit()
-
-    # 2 weeks
-    # analysts - numBuy, numHold, numSell, numTotal
-    # kgv - earnings_per_share, price_earnings_ratio, share_price_m6_ago
-    #     - share_price_y1_ago, share_price_m6_ago, share_price_today, share_price_m1_ago, share_price_m2_ago,
-    #     - share_price_m3_ago
-    # 4 weeks
-    # Gewinnrevision
-    # Dreimonatsreversal
-    # Quarter (am Tag der Quartalszahlen)
-    # Raktion auf Quartalszahlen
-    # yearly (im fruehjahr)
-    # ebit_margin, equity_ratio_in_percent, return_equity
-    # TODO - last_balance_year, coming_fiscal_year - auch monatlich?
-
-    pass
+    """
+    Update the shares every 1 and 14 day of a month at 7.
+    All shares in the db were updated
+    """
+    with scheduler.app.app_context():
+        logger.info(f'Updating all')
+        shares: [Share] = Share.query.all()
+        batch = 0
+        for stored_share in shares:
+            # TODO - add last scrape to share_value and check before scraping again
+            new_share_data: Share = scrape(stored_share.isin)
+            if new_share_data:
+                new_share_value: list[ShareValue] = new_share_data.share_values
+                for share_value in new_share_value:
+                    if not stored_share.exists(share_value):
+                        share_value.share_id = stored_share.id
+                        db.session.add(share_value)
+                if batch % 10 == 0:
+                    db.session.commit()
+                batch += 1
+        db.session.commit()
 
 
 def __map_share_data(share_meta_datas: [RawData]) -> Share:
@@ -198,3 +191,8 @@ def __map_to_share_value(raw_data: RawData) -> ShareValue:
     share_value.related_date = raw_data.related_date
     share_value.note = raw_data.note
     return share_value
+
+
+if __name__ == "__main__":
+    print(f'Scraping data from')
+    update_all_shares()
