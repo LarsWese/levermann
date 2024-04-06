@@ -42,136 +42,14 @@
             <h2>Share Listing</h2>
             <div class="row">
                 {% for share in shares %}
-                    <div class="col-md-6">
-                        <div class="card text-bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    <a href={{ share.website }}>{{ share.name }} {{ share.country }}</a>
-                                    {% if share.large_cap == true %}
-                                        Large Cap
-                                    {% else %}
-                                        Small Mid Cap
-                                    {% endif %}
-                                    {% if share.green == true %}
-                                        <span style="float:right;"><i
-                                                class="bi bi-check-circle text-success"></i></span>
-                                    {% endif %}
-                                </h5>
-                                <div class="container">
-                                    <form action="/change_type" method="post" class="form-inline row">
-                                        <div class="col">
-                                            <input type="hidden" name="share_id" class="form-control"
-                                                   value="{{ share.id }}"/>
-                                            <select name="change_type" class="form-control">
-                                                <option value="2"
-                                                        {% if share.share_type.value == 2 %}selected{% endif %}>
-                                                    Finance
-                                                </option>
-                                                <option value="1"
-                                                        {% if share.share_type.value == 1 %}selected{% endif %}>
-                                                    None_Finance
-                                                </option>
-                                            </select>
-                                        </div>
-                                        <div class="col">
-                                            <input type="submit" value="Change" class="btn btn-primary"/>
-                                        </div>
-                                    </form>
-                                </div>
-                                <p class="card-subtitle mb-2 text-body-secondary">
-                                    <a data-bs-toggle="collapse" href="#{{ share.id }}" role="button"
-                                       aria-expanded="false"
-                                       aria-controls="{{ share.id }}">
-                                        {% if share.short_description_de %}
-                                            {{ share.short_description_de }}
-                                        {% else %}
-                                            Description
-                                        {% endif %}
-                                    </a>
-                                </p>
-                                <div class="card-text collapse" id="{{ share.id }}">
-                                    <p class="card-text">{{ share.long_description_de }}</p>
-                                </div>
-                                <p class="card-text">{{ share.sector }} / {{ share.branch }}</p>
-                                <div class="container">
-
-                                    {% if share.market_capitalization %}
-                                        <div class="row m-2">
-                                            <div class="col text-start"> MarketCap:</div>
-                                            <div class="col text-start">{{ share.market_capitalization|currencyformat('EUR') }}</div>
-                                            <div class="col">{{ share.last_balance_year }}</div>
-                                        </div>
-                                    {% endif %}
-                                    {% if share.return_equity %}
-                                        {{ valuePoint('return on equity ly', share.return_equity['value'], share.return_equity['point'], '%') }}
-                                        {% else %}
-                                        {{ valuePoint('return on equity ly', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.ebit_margin %}
-                                        {{ valuePoint('ebit margin', share.ebit_margin['value'], share.ebit_margin['point'], '%') }}
-                                        {% else %}
-                                        {{ valuePoint('ebit margin', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.equity_ratio_in_percent %}
-                                        {{ valuePoint('equity ratio', share.equity_ratio_in_percent['value'], share.equity_ratio_in_percent['point'], '%') }}
-                                        {% else %}
-                                        {{ valuePoint('equity ratio', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.price_earnings_ratio_5y %}
-                                        {{ valuePoint('price_earnings_ratio 5y', share.price_earnings_ratio_5y['value'], share.price_earnings_ratio_5y['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('price_earnings_ratio 5y', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.price_earnings_ratio_ay %}
-                                        {{ valuePoint('price_earnings_ratio ay', share.price_earnings_ratio_ay['value'], share.price_earnings_ratio_ay['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('price_earnings_ratio ay', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.analyzer_recommendation %}
-                                        {{ valuePoint('analyzer_recommendation', share.analyzer_recommendation['value'], share.analyzer_recommendation['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('analyzer_recommendation', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.share_price_m6_comparison %}
-                                        {{ valuePoint('share_price m6 compare', share.share_price_m6_comparison['value'], share.share_price_m6_comparison['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('share_price m6 compare', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.share_price_y1_comparison %}
-                                        {{ valuePoint('share_price y1 compare', share.share_price_y1_comparison['value'], share.share_price_y1_comparison['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('share_price y1 compare', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.share_price_momentum %}
-                                        {{ valuePoint('share_price momentum', share.share_price_momentum['value'], share.share_price_momentum['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('share_price momentum', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.profit_growth %}
-                                        {{ valuePoint('profit Growth', share.profit_growth['value'], share.profit_growth['point']) }}
-                                        {% else %}
-                                        {{ valuePoint('profit Growth', '-', '-', '') }}
-                                    {% endif %}
-                                    {% if share.total_points %}
-                                        {{ totalPoints(share.total_points['point'], share.total_points['value']) }}
-                                        {% else %}
-                                        {{ valuePoint('Total Points', '0', '0', '') }}
-                                    {% endif %}
-                                </div>
-
-                            </div>
-                            <div class="card-footer">
-                                <p class="card-text">symbol: {{ share.symbol }}, wkn: {{ share.wkn }}</p>
-                                <p class="card-text"><a href="{{ share['onvista_url'] }}" target="_blank">onvista</a>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                   {% include 'share.html' %}
                 {% endfor %}
             </div>
         </div>
     </div>
 {% endblock %}
+
+
 
 {% macro totalPoints(point, value) %}
     {% set number = point | int %}
@@ -181,6 +59,14 @@
             <div class="col text-end">{{ point }}</div>
     </div>
 {% endmacro %}
+
+{% macro value(share_value, name='', unit = '') -%}
+    {% if share_value %}
+        {{ valuePoint(name, share_value['value'], share_value['point'], unit) }}
+    {% else %}
+        {{ valuePoint(name, '-', '-', '') }}
+    {% endif %}
+{%- endmacro  %}
 
 {% macro valuePoint(name, value, point, unit) %}
     {% set number = point | int %}

@@ -25,7 +25,7 @@ def scrape_ecoreporter() -> list[BasicShare]:
         basic_share = BasicShare(isin=isin, name=instrument_name, green=True, description='')
         logger.info(f'add {instrument_name} {isin}')
         result.append(basic_share)
-    print(f'{result}')
+    logger.debug(f'{result}')
     return result
 
 

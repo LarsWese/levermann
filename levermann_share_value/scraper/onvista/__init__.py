@@ -7,16 +7,22 @@ BASE_URL = "https://onvista.de"
 
 METRICS_URL = f"{BASE_URL}/aktien/kennzahlen/"
 COMPANY_PROFILE = f'{BASE_URL}/aktien/unternehmensprofil/'
+SHARE_PAGE = f'{BASE_URL}/aktien/'
 
 
 def snapshot_url(isin: str):
     return f'https://api.onvista.de/api/v1/stocks/ISIN:{isin}/snapshot'
+
+
 def company_url(entity_value: str):
     return f'https://api.onvista.de/api/v1/stocks/{entity_value}/company_snapshot'
 
 
 def analyzer_recommendation_url(id_notation: str):
     return f'https://api.onvista.de/api/v1/stocks/{id_notation}/analyzer_recommendations'
+
+
+timeout = 0
 
 
 def json_data(html_content, logger):

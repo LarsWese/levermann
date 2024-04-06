@@ -61,6 +61,14 @@ def calculate_last_balance_year(svs: [ShareValue]):
                 return r
 
 
+def get_latest_value(svs: [ShareValue]) -> ShareValue:
+    latest_value: ShareValue = svs[0]
+    for sv in svs:
+        if sv.fetch_date > latest_value.fetch_date:
+            latest_value = sv
+    return latest_value
+
+
 class ShareDataMapper:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -92,7 +100,7 @@ class ShareDataMapper:
             if cs.ebit_margin in svs:
                 last_balance_year = calculate_last_balance_year(svs[cs.ebit_margin])
         if last_balance_year == 0:
-            logger.warning(f'no last_balance_year - take default year - 1; {share_values}')
+            logger.debug(f'no last_balance_year - take default year - 1; {share_values}')
             last_balance_year = date.today().year - 1
         self.share_data[cs.last_balance_year] = last_balance_year
         self.__get_large_cap(svs)
@@ -114,13 +122,13 @@ class ShareDataMapper:
         num_hold = 0
         num_total = 0
         if cs.numBuy in svs:
-            num_buy = svs[cs.numBuy][0].value
+            num_buy = int(svs[cs.numBuy][0].value)
         if cs.numSell in svs:
-            num_sell = svs[cs.numSell][0].value
+            num_sell = int(svs[cs.numSell][0].value)
         if cs.numHold in svs:
-            num_hold = svs[cs.numHold][0].value
+            num_hold = int(svs[cs.numHold][0].value)
         if cs.numTotal in svs:
-            num_total = svs[cs.numTotal][0].value
+            num_total = int(svs[cs.numTotal][0].value)
         point = 0
         if num_buy > num_hold and num_buy > num_sell:
             point = 1
@@ -147,7 +155,7 @@ class ShareDataMapper:
     def __get_ebit_marge(self, svs: {str: [ShareValue]}, last_balance_year: int) -> None:
         if cs.ebit_margin in svs:
             ebit_margin: [ShareValue] = svs[cs.ebit_margin]
-            if last_balance_year > 0:
+            if last_balance_year and last_balance_year > 0:
                 for em in ebit_margin:
                     if em.related_date.year == last_balance_year:
                         self.__calculate_points(cs.ebit_margin, float(em.value), 6, 12)
@@ -156,7 +164,7 @@ class ShareDataMapper:
     def __get_equity_ratio(self, svs: {str: [ShareValue]}, last_balance_year: int) -> None:
         if cs.equity_ratio_in_percent in svs:
             equity_ratio: [ShareValue] = svs[cs.equity_ratio_in_percent]
-            if last_balance_year > 0:
+            if last_balance_year and last_balance_year > 0:
                 for em in equity_ratio:
                     if em.related_date.year == last_balance_year:
                         self.__calculate_points(cs.equity_ratio_in_percent, float(em.value), 15, 25)

@@ -2,8 +2,9 @@ import logging
 
 from flask import render_template, request, Blueprint, flash, redirect, url_for
 
-from levermann_share_value.scraper import scraper_mgr as lsm
 from levermann_share_value.levermann.forms import SearchFrom
+from levermann_share_value.scraper import scraper_mgr as lsm
+from levermann_share_value.levermann import constants
 
 # TODO - Button for loading share data
 # TODO - LInk to page which loads shares from DB
@@ -27,6 +28,17 @@ def index():
     return render_template('index.html', shares=shares, form=form)
 
 
+@routes.route('/get_data', methods=['GET'])
+def get_data():
+    share_id = request.args.get('share_id')
+    fetch_date = request.args.get('fetch_date')
+    logger.info(f"get data for {share_id} from {fetch_date}")
+    share_data = lsm.get_share_values_for_fetch_date(share_id, fetch_date)
+    logger.info(share_data)
+    share_data['share_type'] = share_data['share_type'].value
+    return share_data
+
+
 @routes.route('/change_type', methods=['POST'])
 def change_type():
     changed_share__type = int(request.form.get('change_type'))
@@ -47,4 +59,12 @@ def get_all_green_share():
     # scraper_mgr.load_everything()
     # lsm.load_everything()
     lsm.load_all_shares()
+    return redirect(url_for('routes.index'))
+
+
+@routes.route('/update_all')
+def update_all_green_share():
+    # scraper_mgr.load_everything()
+    # lsm.load_everything()
+    lsm.update_all_shares()
     return redirect(url_for('routes.index'))

@@ -1,0 +1,63 @@
+<div class="col-md-6">
+    <div class="card text-bg-light mb-3">
+        <div class="card-body">
+            <h5 class="card-title">
+                <a href={{ share.website }}>{{ share.name }} {{ share.country }}</a>
+                {% if share.large_cap == true %}
+                    Large Cap
+                {% else %}
+                    Small Mid Cap
+                {% endif %}
+                {% if share.green == true %}
+                    <span style="float:right;"><i
+                            class="bi bi-check-circle text-success"></i></span>
+                {% endif %}
+            </h5>
+            <div class="container">
+                <form action="/change_type" method="post" class="form-inline row">
+                    <div class="col">
+                        <input type="hidden" name="share_id" class="form-control"
+                               value="{{ share.id }}"/>
+                        <select name="change_type" class="form-control">
+                            <option value="2"
+                                    {% if share.share_type.value == 2 %}selected{% endif %}>
+                                Finance
+                            </option>
+                            <option value="1"
+                                    {% if share.share_type.value == 1 %}selected{% endif %}>
+                                None_Finance
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <input type="submit" value="Change" class="btn btn-primary"/>
+                    </div>
+                </form>
+            </div>
+            <p class="card-subtitle mb-2 text-body-secondary">
+                <a data-bs-toggle="collapse" href="#{{ share.id }}" role="button"
+                   aria-expanded="false"
+                   aria-controls="{{ share.id }}">
+                    {% if share.short_description_de %}
+                        {{ share.short_description_de }}
+                    {% else %}
+                        Description
+                    {% endif %}
+                </a>
+            </p>
+            <div class="card-text collapse" id="{{ share.id }}">
+                <p class="card-text">{{ share.long_description_de }}</p>
+            </div>
+            <p class="card-text">{{ share.sector }} / {{ share.branch }}</p>
+            <div class="container">
+                {% include 'share_values.html' %}
+            </div>
+
+        </div>
+        <div class="card-footer">
+            <p class="card-text">symbol: {{ share.symbol }}, wkn: {{ share.wkn }}</p>
+            <p class="card-text"><a href="{{ share['onvista_url'] }}" target="_blank">onvista</a>
+            </p>
+        </div>
+    </div>
+</div>

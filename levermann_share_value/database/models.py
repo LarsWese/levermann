@@ -16,7 +16,6 @@ class ShareValue(db.Model):
     fetch_date: date = db.Column(db.Date, default=datetime.today())
     note: str = db.Column(db.String)
     share_id = db.Column(db.Integer, db.ForeignKey('share.id'))
-    db.UniqueConstraint(share_id, name, related_date, value)
 
     def __repr__(self):
         return f'{self.name} {self.value} {self.related_date}'
@@ -47,15 +46,12 @@ class Share(db.Model):
     short_description_de: str = db.Column(db.String)
     green: bool = db.Column(db.Boolean, default=False)
     share_type: str = db.Column(Enum(ShareType), default=ShareType.None_Finance.value, nullable=False)
-    share_values: Mapped[List[ShareValue]] = db.relationship('ShareValue')
+    share_values: Mapped[List[ShareValue]] = db.relationship('ShareValue', lazy='select')
     index_id = db.Column(db.Integer, db.ForeignKey('indices.id'))
 
     def exists(self, share_value: ShareValue) -> bool:
         return ShareValue.query.filter(ShareValue.share_id == self.id, ShareValue.name == share_value.name,
                                        ShareValue.value == share_value.value).first() is not None
-
-    def __repr__(self):
-        return f'{self.name} {self.description} {self.isin}'
 
     def as_dict(self) -> {}:
         share_data = {'id': self.id,

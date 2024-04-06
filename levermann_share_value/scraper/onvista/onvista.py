@@ -8,8 +8,8 @@ from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.exceptions import ShareNotExist, MarketCapitalizationNotFound
 from levermann_share_value.scraper import get_weekdays_m6_nearest_today_y1_y5, get_end_of_last_3_month
 from levermann_share_value.scraper import headers
-from levermann_share_value.scraper.onvista import json_data, analyzer_recommendation_url, \
-    snapshot_url, company_url
+from levermann_share_value.scraper.onvista import analyzer_recommendation_url, \
+    snapshot_url, company_url, timeout
 from levermann_share_value.scraper.raw_data import RawData
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,7 @@ def scrape(isin: str, now: datetime) -> list[RawData]:
 
 def __get_analyzer_recommendation(entity_value: str, now: datetime) -> [RawData]:
     result: [RawData] = []
+    # response = requests.get(analyzer_recommendation_url(entity_value), headers=headers, timeout=timeout)
     response = requests.get(analyzer_recommendation_url(entity_value), headers=headers)
     response.encoding = 'utf-8'
     try:
@@ -61,6 +62,7 @@ def __get_meta_data(entity_value: str, now: datetime) -> [RawData]:
     :return: a list raw metadata to create the share from
     """
     result: [RawData] = []
+    # response = requests.get(company_url(entity_value), headers=headers, timeout=timeout)
     response = requests.get(company_url(entity_value), headers=headers)
     response.encoding = 'utf-8'
     data = json.loads(response.text)
@@ -94,10 +96,26 @@ def __get_meta_data(entity_value: str, now: datetime) -> [RawData]:
             result.append(RawData(name=constants.branch, value=branch_['name'], fetch_date=now))
     return result
 
+# try:
+#     import http.client as http_client
+# except ImportError:
+#     # Python 2
+#     import httplib as http_client
+# http_client.HTTPConnection.debuglevel = 1
+#
+# # You must initialize logging, otherwise you'll not see debug output.
+# logging.basicConfig()
+# logging.getLogger().setLevel(logging.DEBUG)
+# requests_log = logging.getLogger("requests.packages.urllib3")
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = True
 
 def __get_metrics(today: datetime, isin_: str) -> [RawData]:
+    logger.debug(f'{snapshot_url(isin_)}')
+    # response = requests.get(snapshot_url(isin_), headers=headers, timeout=timeout)
     response = requests.get(snapshot_url(isin_), headers=headers)
     response.encoding = 'utf-8'
+    logger.debug(f'get metrics {response.text}')
     data = json.loads(response.text)
     if 'stocksFigure' not in data:
         raise MarketCapitalizationNotFound(isin_)
@@ -200,12 +218,13 @@ def __get_stock_price(today: datetime, id_notation: str, entity_value: str, isin
     m1, m2, m3 = get_end_of_last_3_month(today.date())
     url = f'https://api.onvista.de/api/v1/instruments/STOCK/{entity_value}' \
           f'/eod_history?idNotation={id_notation}&range=Y1&startDate={y1.strftime("%Y-%m-%d")}'
-    logger.info(f"url for stock prices {url}")
+    logger.debug(f"url for stock prices {url}")
+    # response = requests.get(url, headers=headers, timeout=timeout)
     response = requests.get(url, headers=headers)
     response.encoding = 'utf-8'
-    onvista_datas: [RawData] = []
     data = json.loads(response.text)
 
+    onvista_datas: [RawData] = []
     dates = data["datetimeLast"]
 
     for idx, timestamp in enumerate(dates):
@@ -267,6 +286,6 @@ def __get_stock_price(today: datetime, id_notation: str, entity_value: str, isin
 if __name__ == '__main__':
     # __get_meta_data('DE000A0WMPJ6', datetime.utcnow())
     # __get_metrics(datetime.utcnow(), 'DE000A0WMPJ6')
-    s = scrape("DE000A0WMPJ6", datetime.utcnow())
+    s = scrape("DE000A2NB601", datetime.utcnow())
     print(s)
     # print(__get_stock_price(datetime.utcnow(), '24865177', '21058705', 'US79466L3024'))

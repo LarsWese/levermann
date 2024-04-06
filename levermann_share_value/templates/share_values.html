@@ -1,0 +1,43 @@
+<div class="container">
+    <form action="/get_data" method="get" class="form-inline row">
+        <div class="col">
+            <input type="hidden" name="share_id" class="form-control"
+                   value="{{ share.id }}"/>
+            <select name="fetch_date" class="form-control">
+                {% for fd in share.fetched_dates %}
+                    <option value="{{ fd }}"
+                            {% if fd == share.fetched_dates[0] %}
+                            selected
+                            {% endif %}
+                    >{{ fd }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col">
+            <input type="submit" value="GETIT" class="btn btn-primary"/>
+        </div>
+    </form>
+</div>
+{% if share.market_capitalization %}
+    <div class="row m-2">
+        <div class="col text-start"> MarketCap:</div>
+        <div class="col text-start">{{ share.market_capitalization|currencyformat('EUR') }}</div>
+        <div class="col">{{ share.last_balance_year }}</div>
+    </div>
+{% endif %}
+{{ value(share.return_equity, 'return on equity ly', '%') }}
+{{ value(share.ebit_margin, 'ebit margin', '%') }}
+{{ value(share.equity_ratio_in_percent, 'equity ratio', '%') }}
+{{ value(share.price_earnings_ratio_5y, 'price earnings ratio 5y') }}
+{{ value(share.price_earnings_ratio_ay, 'price earnings ratio ay') }}
+{{ value(share.analyzer_recommendation, 'analyzer recommendation') }}
+{{ value(share.share_price_m6_comparison, 'share price m6 compare') }}
+{{ value(share.share_price_y1_comparison, 'share price y1 compare') }}
+{{ value(share.share_price_momentum, 'share price momentum') }}
+{{ value(share.profit_growth, 'profit Growth') }}
+
+{% if share.total_points %}
+    {{ totalPoints(share.total_points['point'], share.total_points['value']) }}
+{% else %}
+    {{ valuePoint('Total Points', '0', '0', '') }}
+{% endif %}

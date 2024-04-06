@@ -1,35 +1,68 @@
 import logging
-from datetime import datetime
+from datetime import datetime, date
 
-from levermann_share_value import scheduler
+from sqlalchemy import select, Result
 
 from levermann_share_value import db
+from levermann_share_value import scheduler
 from levermann_share_value.database.models import Share, ShareType, ShareValue
 from levermann_share_value.levermann import constants
 from levermann_share_value.levermann.exceptions import MarketCapitalizationNotFound
 from levermann_share_value.levermann.mapper import ShareDataMapper
 from levermann_share_value.scraper.ecoreporter import ecoreporter
 from levermann_share_value.scraper.fingreen import fingreen
-from levermann_share_value.scraper.onvista import METRICS_URL, onvista
+from levermann_share_value.scraper.onvista import onvista, SHARE_PAGE
 from levermann_share_value.scraper.raw_data import BasicShare
 from levermann_share_value.scraper.raw_data import RawData
 
 logger = logging.getLogger(__name__)
-mapper = ShareDataMapper()
+
+
+def get_share_values_for_fetch_date(share_id: int, fetch_date: date):
+    share: Share = Share.query.filter(Share.id == share_id).first()
+    return get_share_values(share, fetch_date)
 
 
 def get_all_shares() -> [{}]:
     result = []
     shares: [Share] = Share.query.all()
+
     for share in shares:
-        share_values = share.share_values
-        share_data = share.as_dict()
-        logger.debug(f'{share.isin}')
-        calculated_values = mapper.calculate(share_values)
-        share_data.update(calculated_values)
-        share_data[constants.onvista_url] = f'{METRICS_URL}{share_data[constants.isin]}'
+        share_data = get_share_values(share)
         result.append(share_data)
     result = sorted(result, key=lambda s: s.get('total_points').get('point'), reverse=True)
+    return result
+
+
+def get_share_values(share: Share, fetch_date=None):
+    fetched_dates = __get_fetched_dates(share.id)
+    latest_fetch_date = fetch_date if fetch_date else fetched_dates[0]
+
+    share_values = __get_shareValue_data(share.id, latest_fetch_date)
+    share_data = share.as_dict()
+    logger.debug(f'{share.isin}')
+    calculated_values = ShareDataMapper().calculate(share_values)
+    share_data.update(calculated_values)
+    share_data[constants.onvista_url] = f'{SHARE_PAGE}{share_data[constants.isin]}'
+    share_data[constants.fetched_dates] = fetched_dates
+    return share_data
+
+
+def __get_shareValue_data(share_id: int, latest_fetch_date: date) -> [ShareValue]:
+    stmt = select(ShareValue).where(ShareValue.share_id == share_id,
+                                    ShareValue.fetch_date == latest_fetch_date)
+    result: Result = db.session.query(ShareValue).from_statement(stmt).all()
+
+    return result
+
+
+def __get_fetched_dates(share_id: int) -> [datetime]:
+    stmt = select(ShareValue.fetch_date).where(ShareValue.share_id == share_id).group_by(
+        ShareValue.fetch_date).order_by(ShareValue.fetch_date.desc())
+    res = db.session.execute(stmt).all()
+    result: [datetime] = list()
+    for r in res:
+        result.append(r.fetch_date)
     return result
 
 
@@ -65,12 +98,21 @@ def load_all_shares():
         if not found:
             logger.info(f'add {ecoreporter_share.name}')
             all_shares.append(ecoreporter_share)
-    print(f'{len(all_shares)} new shares found')
+
+    stored_shares_isins = Share.query.all()
+    stored_shares_isins = [share.isin for share in stored_shares_isins]
+    isins = [share.isin for share in all_shares]
+    new_isins = []
+    for isin in isins:
+        if isin not in stored_shares_isins:
+            new_isins.append(isin)
+
+    logger.info(f'{len(new_isins)} new shares found')
 
     # get share details
     batch = 0
-    for bs in all_shares:
-        share = scrape(bs.isin)
+    for bs in new_isins:
+        share = scrape(bs)
         if share:
             share.green = True
             db.session.add(share)
@@ -97,28 +139,30 @@ def scrape(isin: str) -> Share | None:
 
 
 @scheduler.task('cron', id='scraper_mgr_cron', day='1,14', month='*', hour='7', minute='0')
-def update_all_shares():
+def update_all_shares_periodically() -> None:
     """
     Update the shares every 1 and 14 day of a month at 7.
     All shares in the db were updated
     """
     with scheduler.app.app_context():
-        logger.info(f'Updating all')
-        shares: [Share] = Share.query.all()
-        batch = 0
-        for stored_share in shares:
-            # TODO - add last scrape to share_value and check before scraping again
-            new_share_data: Share = scrape(stored_share.isin)
-            if new_share_data:
-                new_share_value: list[ShareValue] = new_share_data.share_values
-                for share_value in new_share_value:
-                    if not stored_share.exists(share_value):
-                        share_value.share_id = stored_share.id
-                        db.session.add(share_value)
-                if batch % 10 == 0:
-                    db.session.commit()
-                batch += 1
-        db.session.commit()
+        update_all_shares()
+
+
+def update_all_shares():
+    logger.info(f'Updating all')
+    shares: [Share] = Share.query.all()
+    batch = 0
+    for stored_share in shares:
+        new_share_data: Share = scrape(stored_share.isin)
+        if new_share_data:
+            new_share_value: list[ShareValue] = new_share_data.share_values
+            for share_value in new_share_value:
+                share_value.share_id = stored_share.id
+                db.session.add(share_value)
+            if batch % 10 == 0:
+                db.session.commit()
+            batch += 1
+    db.session.commit()
 
 
 def __map_share_data(share_meta_datas: [RawData]) -> Share:
