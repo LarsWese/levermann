@@ -1,7 +1,9 @@
 import logging
 
 from flask import render_template, request, Blueprint, flash, redirect, url_for
+from flask_login import login_user, logout_user, current_user, login_required
 
+from levermann_share_value.database.models import User
 from levermann_share_value.levermann.forms import SearchFrom
 from levermann_share_value.scraper import scraper_mgr as lsm
 from levermann_share_value.levermann import constants
@@ -11,6 +13,25 @@ from levermann_share_value.levermann import constants
 routes = Blueprint('routes', __name__)
 logger = logging.getLogger(__name__)
 
+#https://www.youtube.com/watch?v=t9zA1gvrTvo
+@routes.route('/login/<uid>')
+def login(uid: int):
+    user: User = User.query.get(uid)
+    print(user)
+    login_user(user)
+    return 'Successfully logged in!'
+
+@routes.route('/logout')
+def logout():
+    logout_user()
+    return 'Successfully logged out!'
+
+@routes.route('/info', methods=['GET'])
+def info():
+    if current_user.is_active:
+        return str(current_user.username)
+    else:
+        return 'No User is logged in'
 
 @routes.route('/', methods=['GET', 'POST'])
 def index():

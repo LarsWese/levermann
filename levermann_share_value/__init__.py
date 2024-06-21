@@ -3,11 +3,13 @@ from logging.config import dictConfig
 
 import babel
 from flask import Flask, request, g
-from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from flask_apscheduler import APScheduler
+from flask_login import LoginManager
+from flask_bcrypt import Bcrypt
+
 
 DB_NAME = "../instance/levermann.db"
 
@@ -53,7 +55,7 @@ scheduler = APScheduler()
 
 def create_app() -> Flask:
     app = Flask(__name__, template_folder='templates')
-    babel = Babel(app, locale_selector=get_locale)
+    # babel = Babel(app, locale_selector=get_locale)
     app.config['SECRET_KEY'] = 'dsfajifawo jflknvkdczxl'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
     app.config['BABEL_LANGUAGES'] = ['en', 'de']  # Available languages
@@ -61,6 +63,15 @@ def create_app() -> Flask:
     app.config['SCHEDULER_API_ENABLED'] = True
     db.init_app(app)
 
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+
+    from levermann_share_value.database.models import User
+    @login_manager.user_loader
+    def load_user(uid) -> User:
+        return User.query.get(uid)
+
+    # bcrypt = Bcrypt(app)
 
     with app.app_context():
         db.create_all()
